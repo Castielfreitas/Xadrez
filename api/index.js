@@ -1,3 +1,4 @@
+import {storeAvatar} from '../server/avatar.js';
 import { waitUntil } from '@vercel/functions';
 import { processAnalysis, engineAssetsAvailable } from '../server/analysis.js';
 import { createClient } from '@supabase/supabase-js';
@@ -18,7 +19,8 @@ export default async function handler(req,res){
  if(req.method==='GET'&&action==='state')return res.status(200).json({state:publicState(row.state,actor?.id,actor?.admin),revision:row.revision,actor});
  if(req.method!=='POST')throw new DomainError('Método não permitido.',405);
  if(!actor)throw new DomainError('Entre na sua conta.',401);
- const body=typeof req.body==='string'?JSON.parse(req.body):req.body;
+ let body=typeof req.body==='string'?JSON.parse(req.body):req.body;
+ if(action==='avatar'){if(!row.state.players[actor.id]||row.state.players[actor.id].status!=='active')throw new DomainError('Conta indisponível.',403);if(Date.now()-(row.state.players[actor.id].avatarUpdatedAt||0)<30000)throw new DomainError('Aguarde 30 segundos antes de trocar a foto.');const avatarPath=await storeAvatar(client.storage,actor.id,body?.image);body={id:crypto.randomUUID(),type:'profile_update',payload:{avatarPath}};}
  if(!body||JSON.stringify(body).length>5000)throw new DomainError('Solicitação inválida.');
  // Compare-and-swap retries make reservations, acceptance and settlement atomic.
  let current=row;
