@@ -1,0 +1,6 @@
+// Original synthesized sounds; no third-party audio assets.
+let context;let enabled=localStorage.getItem('arena-sound')!=='off';
+export const soundEnabled=()=>enabled;
+export function unlockSound(){if(!enabled)return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;context??=new Audio();context.resume?.().catch(()=>{});}catch{}}
+export function toggleSound(){enabled=!enabled;localStorage.setItem('arena-sound',enabled?'on':'off');if(enabled){unlockSound();playSound('move');}return enabled;}
+export function playSound(kind='move'){if(!enabled||!context||context.state==='suspended')return;try{const notes={move:[440,260],capture:[220,130,90],castle:[330,440],check:[620,830],end:[523,659,784] }[kind]||[440,260];const start=context.currentTime;notes.forEach((hz,i)=>{const o=context.createOscillator(),gain=context.createGain();o.type=kind==='capture'?'triangle':'sine';o.frequency.setValueAtTime(hz,start+i*.065);gain.gain.setValueAtTime(.0001,start+i*.065);gain.gain.exponentialRampToValueAtTime(.13,start+i*.065+.008);gain.gain.exponentialRampToValueAtTime(.0001,start+i*.065+.12);o.connect(gain);gain.connect(context.destination);o.start(start+i*.065);o.stop(start+i*.065+.14);});}catch{}}
