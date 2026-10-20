@@ -38,3 +38,9 @@ A regra experimental arena-triage-v1 examina várias partidas e adversários, ex
 Não é tecnologia proprietária do Chess.com, modelo calibrado, prova de trapaça nem probabilidade de culpa. Não detectar uma regra não certifica jogo limpo. Banimento/suspensão exigem decisão administrativa fundamentada; não há banimento automático por precisão. O administrador pode encerrar casos ou aplicar/reverter restrições com auditoria. Casos abertos impedem liberação manual e automática de prêmios.
 
 Limites operacionais: a fila depende da disponibilidade das funções e das cotas gratuitas; não promete análise instantânea de todas as partidas sob carga. O navegador não pode impedir universalmente extensões, fotografias externas ou assistência em outro aparelho. KYC e câmera permanecem indisponíveis sem a chave privada configurada; câmera oferece quadros periódicos com supervisão humana, sem prova de presença automatizada.
+
+## Rating e desempenho
+
+Glicko-2 mantém pools independentes por ritmo. Torneios e desafios consultam o pool correspondente; verificação externa inicializa apenas pools ainda não disputados. A atualização ocorre uma vez por confronto homologado, com valores antes/depois e variação exibida. O rating geral legado continua disponível por compatibilidade; o ranking competitivo e o tabuleiro usam os pools. Empates reiniciam o confronto sem pontuar até haver vencedor. Treino local e computador não alteram rating competitivo.
+
+Cada confronto iniciado registra no servidor os ratings e a incerteza de ambos. Vitórias repetidas contra adversários mais fortes de contas estabelecidas fornecem contexto de possível rating subestimado, sem abrir casos ou punir isoladamente. Contas provisórias são excluídas desse sinal. Não se atribui um Elo a lances nem se assume fraude por um lance brilhante.
