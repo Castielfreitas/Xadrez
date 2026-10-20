@@ -16,7 +16,8 @@
 | Puzzles, aulas e biblioteca de cursos | Pendente |
 | Análise pós-partida interativa do jogador | Pendente; precisa ficar isolada da análise privada durante o jogo |
 | Variantes, suíço, arenas, simultâneas e correspondência | Pendente |
-| Pix, saque, CPF/KYC e operação em dinheiro real | Não integrados |
+| CPF/KYC manual e quadros privados de câmera | Código preparado, aguardando configuração e validação em produção; ver SEGURANCA.md |
+| Pix, saque e operação em dinheiro real | Não integrados |
 | Publicação Google Play e assinatura Android | Pendente |
 
 A Arena tem identidade e código próprios. Esta lista não representa paridade integral com Chess.com.
