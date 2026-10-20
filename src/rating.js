@@ -1,0 +1,12 @@
+// Glicko-2: independent pool per time control; one completed match per rating period.
+export const POOLS=['bullet','blitz','rapid','classical'];
+export function poolFor(minutes,increment=0){const seconds=minutes*60+40*increment;return seconds<180?'bullet':seconds<600?'blitz':seconds<3600?'rapid':'classical';}
+export const freshRating=()=>({rating:1200,deviation:350,volatility:0.06,games:0,wins:0,losses:0});
+export function getRating(player,pool){return player?.ratings?.[pool]||freshRating();}
+export function updateRating(current,opponent,score){
+ const c={...freshRating(),...current},o={...freshRating(),...opponent};const scale=173.7178,mu=(c.rating-1500)/scale,phi=c.deviation/scale,other=(o.rating-1500)/scale;const g=1/Math.sqrt(1+3*(o.deviation/scale)**2/Math.PI**2);const E=1/(1+Math.exp(-g*(mu-other))),v=1/(g*g*E*(1-E)),delta=v*g*(score-E),a=Math.log(c.volatility*c.volatility),tau=.5;
+ const f=x=>{const ex=Math.exp(x);return ex*(delta*delta-phi*phi-v-ex)/(2*(phi*phi+v+ex)**2)-(x-a)/(tau*tau);};let A=a,B;if(delta*delta>phi*phi+v)B=Math.log(delta*delta-phi*phi-v);else{let k=1;while(f(a-k*tau)<0&&k<100)k++;B=a-k*tau;}let fa=f(A),fb=f(B);for(let i=0;i<100&&Math.abs(B-A)>.000001;i++){const C=A+(A-B)*fa/(fb-fa),fc=f(C);if(fc*fb<=0){A=B;fa=fb;}else fa/=2;B=C;fb=fc;}
+ const sigma=Math.exp(A/2),pre=Math.sqrt(phi*phi+sigma*sigma),nextPhi=1/Math.sqrt(1/(pre*pre)+1/v),nextMu=mu+nextPhi*nextPhi*g*(score-E);
+ return {rating:Math.max(100,Math.round((nextMu*scale+1500)*100)/100),deviation:Math.min(350,nextPhi*scale),volatility:sigma,games:c.games+1,wins:c.wins+(score===1?1:0),losses:c.losses+(score===0?1:0)};
+}
+export function rateGame(s,g,now){if(g.poolRatingApplied)return;const pool=g.pool||poolFor(g.minutes,g.increment),winner=s.players[g.winner],loser=s.players[g.winner===g.white?g.black:g.white];winner.ratings??={};loser.ratings??={};const beforeW=getRating(winner,pool),beforeL=getRating(loser,pool),nextW=updateRating(beforeW,beforeL,1),nextL=updateRating(beforeL,beforeW,0);winner.ratings[pool]=nextW;loser.ratings[pool]=nextL;g.ratingChanges={[winner.id]:Math.round(nextW.rating-beforeW.rating),[loser.id]:Math.round(nextL.rating-beforeL.rating)};for(const [p,next]of [[winner,nextW],[loser,nextL]]){p.ratingHistory??=[];p.ratingHistory.push({game:g.id,pool,rating:next.rating,change:g.ratingChanges[p.id],at:now});p.ratingHistory=p.ratingHistory.slice(-200);}g.pool=pool;g.poolRatingApplied=true;}
