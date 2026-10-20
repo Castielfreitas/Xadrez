@@ -2,6 +2,10 @@
 
 Plataforma de validação para desafios de xadrez e torneios eliminatórios. Primeira versão em créditos demonstrativos, sem dinheiro real.
 
+## Código-fonte
+
+O código completo está no arquivo `arena-xadrez-v0.2-codigo.zip` na raiz deste repositório. Extraia o ZIP em uma pasta antes de executar os comandos abaixo.
+
 ## Executar
 
 Node.js 22+.
@@ -35,3 +39,8 @@ Supabase: siga [docs/OPERACAO.md](docs/OPERACAO.md). Nunca coloque SUPABASE_SERV
 Esta versão não está pronta para movimentar dinheiro real. Pix, KYC, integração Lichess, câmera e banimento automático não estão integrados. O worker Stockfish precisa de host próprio; a fila não significa que a engine está rodando. A demonstração local não conecta dois dispositivos. O modo online exige configurar o Supabase.
 
 A publicação na Google Play depende das políticas da loja; o modelo com apostas/inscrições e prêmio monetário não tem elegibilidade presumida. Veja o documento operacional para a lista completa de implementações e pendências.
+
+
+## Versão 0.2
+
+Computador com 8 níveis, cores e ritmos; busca de adversários grátis; incremento; Elo Arena; aviso persistente de confirmação e reenvio. O modelo de e-mail português está preparado; sua aplicação depende de SMTP próprio ou Pro no Supabase. Nenhum plano pago foi ativado.
