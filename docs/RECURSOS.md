@@ -39,3 +39,11 @@ Configuração de computador e busca online ficam em painel lateral fixo junto �
 - Lances são calculados e validados no servidor, com lease, compare-and-swap e verificação da posição antes da aplicação. O navegador não escolhe lances da Sandra. Polling autenticado aciona os trabalhos; não há promessa de processamento contínuo sem clientes conectados.
 - Identidade e câmera continuam exigidas para humanos quando ativadas. A conta reservada do bot é isenta desses requisitos humanos.
 - Somente sandbox. Dinheiro real/Pix continuam desativados; esta implementação não homologa pagamentos nem apostas reais.
+
+## Resultado, capturas e personalização
+
+- Deslocamento de peças: 280 ms; espera mínima do treino local: 360 ms. Arrasto com 260 ms, ruído filtrado mais suave e pouso discreto.
+- Resultado em janela central uma vez por conclusão, com vitória/derrota/empate e motivo; homologação continua indicada quando aplicável.
+- Peças efetivamente capturadas aparecem no cabeçalho de quem capturou. Inclui en passant e acompanha navegação do histórico e desfazer lances.
+- Comissão e prêmio líquido calculado aparecem na configuração da entrada; a busca deixa de repetir a comissão.
+- Avatar da Sandra: imagem escolhida e preparada pelo admin, envio pela API autenticada, JPEG até 512 px/32 KB no bucket de avatares, pasta reservada arena-sandra. Só admin pode alterar/restaurar; perfil continua identificado como computador nos aceites e torneios.
