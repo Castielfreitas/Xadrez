@@ -3,8 +3,8 @@
 | Recurso | Estado |
 |---|---|
 | Regras, relógio, incremento, promoção, roque, empate/revanche | Implementados |
-| Último lance, animação, som, xeque, xeque-mate e histórico | Implementados |
-| Computador com oito dificuldades, cores, desfazer, PGN | Implementados; não usa Elo oficial |
+| Último lance, animação, som, xeque, xeque-mate e histórico | Implementados; histórico recolhido por clique, captura em fragmentos e aviso de mate |
+| Computador com oito dificuldades, cores, desfazer, PGN | Implementados; avatar próprio, controles sem card duplicado, não usa Elo oficial |
 | Matchmaking grátis e com entrada | Implementado com saldo de teste |
 | Rating por ritmo e ranking | Glicko-2; provisório identificado por ? |
 | Nome, usuário único, foto, perfil e partidas recentes | Implementados |
@@ -12,6 +12,8 @@
 | Torneios eliminatórios, faixas verificadas e gestão administrativa | Implementados; câmera ainda bloqueia início por falta de integração |
 | Taxa e prêmio automáticos | Livro de créditos de teste; liberação condicionada à análise e ausência de restrições |
 | Análise privada de lances | Stockfish 19; sem sugestões públicas ou banimento por coincidência isolada |
+| Revanche voluntária após vitória/derrota entre usuários | Pendente; a repetição após empate já existe |
+| E-mail de confirmação com identidade própria via SMTP | Pendente; aviso de confirmação no cadastro implementado |
 | Chat privado/clubes/equipes | Pendente |
 | Puzzles, aulas e biblioteca de cursos | Pendente |
 | Análise pós-partida interativa do jogador | Pendente; precisa ficar isolada da análise privada durante o jogo |
