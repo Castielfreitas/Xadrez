@@ -23,3 +23,7 @@
 | Publicação Google Play e assinatura Android | Pendente |
 
 A Arena tem identidade e código próprios. Esta lista não representa paridade integral com Chess.com.
+
+## Configuração e finais de partida
+
+Configuração de computador e busca online ficam em painel lateral fixo junto à prévia do tabuleiro. Promoção oferece quatro peças identificadas individualmente para ambas as cores. Afogamento mostra empate explícito; em confrontos online, a repetição preserva a causa do empate e as reservas. Movimento visual de 520 ms e resposta do computador com intervalo mínimo de 620 ms. O tabuleiro usa uma área maior com controles na lateral, preservando as casas clicáveis sem perspectiva inclinada.
