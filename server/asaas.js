@@ -8,10 +8,12 @@ const requireValue=(ok,message)=>{if(!ok)throw new DomainError(message);};
 
 // Readiness is private administrative metadata; it never exposes credential values.
 export function asaasReadiness(env=process.env){
- const environment=Object.hasOwn(origins,env.ASAAS_ENVIRONMENT)?env.ASAAS_ENVIRONMENT:null;
+ const inferred=env.ASAAS_API_KEY?.startsWith('$aact_prod_')?'production':env.ASAAS_API_KEY?.startsWith('$aact_hmlg_')?'sandbox':null;
+ let environment=env.ASAAS_ENVIRONMENT?(Object.hasOwn(origins,env.ASAAS_ENVIRONMENT)?env.ASAAS_ENVIRONMENT:null):inferred;
+ if(inferred&&environment!==inferred)environment=null;
  const apiKey=Boolean(env.ASAAS_API_KEY?.trim());
  const webhookToken=validToken(env.ASAAS_WEBHOOK_TOKEN)&&env.ASAAS_WEBHOOK_TOKEN!==env.ASAAS_API_KEY;
- return {provider:'asaas',environment,credentialsConfigured:Boolean(environment&&apiKey&&webhookToken),businessModelApproved:env.ASAAS_BUSINESS_MODEL_APPROVED==='true',productionAuthorized:env.ASAAS_PRODUCTION_ENABLED==='true',paymentsEnabled:false,stage:'adapter_only'};
+ return {provider:'asaas',environment,apiKeyConfigured:apiKey,webhookConfigured:webhookToken,credentialsConfigured:Boolean(environment&&apiKey&&webhookToken),businessModelApproved:env.ASAAS_BUSINESS_MODEL_APPROVED==='true',productionAuthorized:env.ASAAS_PRODUCTION_ENABLED==='true',paymentsEnabled:false,stage:'wallet'};
 }
 
 function cents(value){requireValue(Number.isSafeInteger(value)&&value>0&&value<=100000000,'Informe um valor válido em centavos.');return value/100;}
@@ -19,13 +21,13 @@ function reference(value){requireValue(typeof value==='string'&&/^[A-Za-z0-9_-]{
 function resource(value,prefix){requireValue(typeof value==='string'&&value.length<=100&&new RegExp('^'+prefix+'[A-Za-z0-9_-]+$').test(value),'Identificador Asaas inválido.');return encodeURIComponent(value);}
 function date(value){requireValue(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value),'Vencimento inválido.');const parsed=new Date(value+'T00:00:00Z');requireValue(Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value,'Vencimento inválido.');return value;}
 
-// Server-only provider adapter. It does not mutate any wallet or expose payment routes.
+// Server-only provider adapter. Wallet mutations live in cash-ledger.js and payments.js.
 // POST requests are deliberately never retried: externalReference is not a unique key.
 export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={}){
  const status=asaasReadiness(env),key=env.ASAAS_API_KEY;
  async function request(path,body){
-  if(!status.credentialsConfigured)throw new DomainError('Integração Asaas aguardando configuração segura.',503);
-  if(status.environment==='production'&&(!status.businessModelApproved||!status.productionAuthorized))throw new DomainError('Operação em produção ainda não autorizada para a Arena.',403);
+  if(!status.environment||!status.apiKeyConfigured||(body&&!status.credentialsConfigured))throw new DomainError('Integração Asaas aguardando configuração segura.',503);
+  if(body&&status.environment==='production'&&(!status.businessModelApproved||!status.productionAuthorized))throw new DomainError('Operação em produção ainda não autorizada para a Arena.',403);
   let response;
   try{response=await fetchImpl(origins[status.environment]+path,{method:body?'POST':'GET',headers:{access_token:key,'User-Agent':'ArenaXadrez/1.0','Content-Type':'application/json',Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(10000),...(body?{body:JSON.stringify(body)}:{})});}
   catch{throw new DomainError('Resposta do Asaas inconclusiva. Concilie a operação antes de tentar novamente.',502);}
@@ -34,6 +36,7 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
   try{return await response.json();}catch{throw new DomainError('Resposta do Asaas inválida. Concilie a operação antes de tentar novamente.',502);}
  }
  return {
+  getBalance(){return request('/finance/balance');},
   async createCustomer({name,cpf,email,externalReference}){
    requireValue(typeof name==='string'&&name.trim().length>=5&&name.length<=120,'Nome completo inválido.');
    requireValue(validCpf(cpf),'CPF inválido.');
