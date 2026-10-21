@@ -55,3 +55,12 @@ Configuração de computador e busca online ficam em painel lateral fixo junto �
 - Quatro capas originais selecionáveis: Coroa dourada, Noite azul, Clube clássico e Blitz de cobre. Os cartões usam a capa salva.
 - Prêmio mínimo garantido configurável em créditos de teste. O organizador reserva a garantia inteira ao publicar; ao fim só é consumida a diferença necessária para alcançar o prêmio mínimo, e o excedente reservado é devolvido. Se as inscrições líquidas superarem a garantia, o prêmio cresce. Cancelar devolve garantia e inscrições. Não há emissão de saldo nem premiação sem cobertura.
 - Marcação explícita de torneio de teste. Criar e cancelar seguem exclusivos da administração autenticada.
+
+## Torneios de prêmio fixo
+Novos torneios criados pelo formulário usam inscrição e prêmio fixos. O administrador digita entre 2 e 1024 vagas e vê arrecadação atual e projeção após o prêmio. O público recebe apenas as informações de participação e prêmio, sem comissão ou demonstrativo financeiro. Torneios antigos conservam seu contrato e reserva de prêmio.
+
+No horário previsto, a próxima requisição à API dispara uma tentativa atômica de início: com pelo menos dois participantes e arrecadação estritamente superior ao prêmio, inicia mesmo abaixo da lotação. Caso contrário, cancela e devolve os saldos. Se um participante estiver ocupado, aguarda nova tentativa. Não há relógio dedicado sem tráfego no plano gratuito. Vagas ímpares recebem avanço de rodada sem partida e sem alteração de rating.
+
+O campeão recebe exatamente o prêmio fixo e o excedente vai para a carteira administrativa da plataforma. Tudo permanece em créditos TEST, sem dinheiro real. Eliminados podem comprar outra inscrição enquanto o campeonato estiver em andamento e houver vagas de inscrição; entram na próxima rodada sem modificar jogos em curso. A pontuação do campeonato zera; rating geral é preservado. O total de inscrições inclui reinscrições.
+
+Capas: seis imagens originais, mais upload administrativo JPEG/PNG/WebP de até 5 MB, convertido no navegador a JPEG de até 512 pixels e 32 KB, com validação no servidor. Apenas a administração pode enviar; caminhos de capa ficam limitados ao espaço do próprio administrador no bucket público de imagens.
