@@ -47,3 +47,11 @@ Configuração de computador e busca online ficam em painel lateral fixo junto �
 - Peças efetivamente capturadas aparecem no cabeçalho de quem capturou. Inclui en passant e acompanha navegação do histórico e desfazer lances.
 - Comissão e prêmio líquido calculado aparecem na configuração da entrada; a busca deixa de repetir a comissão.
 - Avatar da Sandra: imagem escolhida e preparada pelo admin, envio pela API autenticada, JPEG até 512 px/32 KB no bucket de avatares, pasta reservada arena-sandra. Só admin pode alterar/restaurar; perfil continua identificado como computador nos aceites e torneios.
+
+## Torneios: criação, prêmio e capas
+
+- Meus confrontos tem página própria e item na lateral, imediatamente após Fair play. Não duplica a lista na página inicial ou nos torneios.
+- Criar torneio abre página com rolagem normal, horário futuro sugerido, validação visível e campos preservados durante polling. A fiscalização não configurada fica desabilitada no formulário.
+- Quatro capas originais selecionáveis: Coroa dourada, Noite azul, Clube clássico e Blitz de cobre. Os cartões usam a capa salva.
+- Prêmio mínimo garantido configurável em créditos de teste. O organizador reserva a garantia inteira ao publicar; ao fim só é consumida a diferença necessária para alcançar o prêmio mínimo, e o excedente reservado é devolvido. Se as inscrições líquidas superarem a garantia, o prêmio cresce. Cancelar devolve garantia e inscrições. Não há emissão de saldo nem premiação sem cobertura.
+- Marcação explícita de torneio de teste. Criar e cancelar seguem exclusivos da administração autenticada.
