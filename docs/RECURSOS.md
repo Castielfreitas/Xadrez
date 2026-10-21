@@ -27,3 +27,15 @@ A Arena tem identidade e código próprios. Esta lista não representa paridade 
 ## Configuração e finais de partida
 
 Configuração de computador e busca online ficam em painel lateral fixo junto à prévia do tabuleiro. Promoção oferece quatro peças identificadas individualmente para ambas as cores. Afogamento mostra empate explícito; em confrontos online, a repetição preserva a causa do empate e as reservas. Movimento visual de 520 ms e resposta do computador com intervalo mínimo de 620 ms. O tabuleiro usa uma área maior com controles na lateral, preservando as casas clicáveis sem perspectiva inclinada.
+
+## Sandra e som de arrasto
+
+- Movimento: fricção sintetizada por 480 ms e pouso suave, acompanhando a animação. Captura mantém impacto próprio.
+- Sandra é uma conta de sistema explicitamente identificada como computador Stockfish. Skill 20, UCI_LimitStrength=false, Hash 32 MB, 1 thread, busca de 1,5 s/lance (não representa força ilimitada nem Elo garantido).
+- Admin habilita desafios e novos torneios separadamente; ambos vêm desligados. Alterações não interrompem partidas já aceitas.
+- Saldo próprio abastecido por transferência da carteira demonstrativa do admin, sem emissão de créditos. As duas entradas são reservadas; prêmio e comissão seguem a taxa fixada no aceite. Não aceita entrada sem cobertura.
+- Escolha e aceite explícitos para enfrentar Sandra; busca de humanos não é substituída silenciosamente por bot. Torneios exibem a inscrição da Sandra desde a criação e exigem aceite ao entrar. Um torneio com Sandra pode ter faixas humanas de rating; bot não é considerado humano dessa faixa.
+- Partidas contra Sandra não alteram rating humano; bot fora do ranking humano. Empate preserva reserva e abre nova partida.
+- Lances são calculados e validados no servidor, com lease, compare-and-swap e verificação da posição antes da aplicação. O navegador não escolhe lances da Sandra. Polling autenticado aciona os trabalhos; não há promessa de processamento contínuo sem clientes conectados.
+- Identidade e câmera continuam exigidas para humanos quando ativadas. A conta reservada do bot é isenta desses requisitos humanos.
+- Somente sandbox. Dinheiro real/Pix continuam desativados; esta implementação não homologa pagamentos nem apostas reais.
