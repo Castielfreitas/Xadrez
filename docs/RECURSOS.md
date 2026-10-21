@@ -3,9 +3,9 @@
 | Recurso | Estado |
 |---|---|
 | Regras, relógio, incremento, promoção, roque, empate/revanche | Implementados |
-| Último lance, animação, som, xeque, xeque-mate e histórico | Implementados; histórico recolhido por clique, captura em fragmentos e aviso de mate |
+| Último lance, animação, som, xeque, xeque-mate e histórico | Implementados; lances abertos na lateral com opção de recolher, peças vetoriais próprias, destruição da peça capturada em fragmentos e aviso de mate |
 | Computador com oito dificuldades, cores, desfazer, PGN | Implementados; avatar próprio, controles sem card duplicado, não usa Elo oficial |
-| Matchmaking grátis e com entrada | Implementado com saldo de teste |
+| Matchmaking grátis e com entrada | Implementado com saldo de teste; tempos e incrementos selecionáveis, filas distintas com/sem rating |
 | Rating por ritmo e ranking | Glicko-2; provisório identificado por ? |
 | Nome, usuário único, foto, perfil e partidas recentes | Implementados |
 | Busca de jogadores, presença, amizades, bloqueio e convite privado | Implementados |
