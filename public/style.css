@@ -43,3 +43,7 @@ html{scrollbar-gutter:stable}.board-layout{align-items:start}.board-layout>secti
 
 /* Keep a single tournament card compact, with cover above its status. */
 .tournament-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));align-items:start}.tournament-cover{margin:-25px -25px 18px}.tournament-card h2{font-size:23px}.tournament-card .card-stats{gap:16px}@media(max-width:650px){.tournament-grid{grid-template-columns:1fr}}
+
+.card-stats b,.tournament-prize-preview,.admin-finances{color:#65d98b}.tournament-card-head>svg{filter:drop-shadow(0 2px 0 #77500d) drop-shadow(0 4px 3px #0008);color:#f4c75d}
+
+.tournament-cover{position:relative;overflow:hidden}.uploaded-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.tournament-cover>span{position:relative;z-index:1}
