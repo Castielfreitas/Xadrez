@@ -1,98 +1,119 @@
-# Carteira Asaas — implementação e ativação
+# Integração financeira Arena Xadrez
 
-A chave deve existir somente em `xadres/arena-xadrez`, como Secret de Production.
-Nunca cole credenciais no chat, código, logs ou issues. Nenhuma cobrança ou transferência
-real foi realizada nos testes desta implementação.
+Projeto exclusivo Supabase: `kjqovtvhgulwufdzfmif`, organização Arena Xadrez.
+Nenhum recurso do StudyWise é utilizado. Não guardar credenciais no Git, chat ou logs.
 
-## Entregue no código
+## Componentes
 
-- Livro BRL separado por ambiente e separado dos créditos antigos, sem conversão.
-- Reserva atômica por revisão do estado, idempotência local e referência persistida
-  antes de POST. Falhas ambíguas ficam em conciliação; POST não é reenviado.
-- Cadastro Asaas com identidade previamente verificada pelo administrador e cifrada,
-  CPF e nome obtidos no servidor, e-mail da sessão confirmada e consentimento explícito.
-- Cobrança Pix, QR Code e copia e cola; crédito somente no status RECEIVED consultado
-  no Asaas, com cliente, referência, tipo e valor conferidos. CONFIRMED não credita.
-- Webhook autenticado, persistência e deduplicação antes do HTTP 200; processamento
-  posterior consulta os dados oficiais. Notificações não comprovam pagamento sozinhas.
-- Registro das taxas do provedor; o usuário recebe o valor bruto. Custos são da plataforma.
-- Saque reservado antes da aprovação administrativa; Pix somente para CPF verificado
-  do titular. DONE consome reserva; FAILED/CANCELLED devolvem uma única vez.
-- Devolução integral reverte crédito uma vez; saldo devedor e devoluções parciais entram
-  em revisão. Não há desbloqueio automático de carteiras em revisão.
-- Interface de carteira, acompanhamento de recargas/saques e revisão administrativa.
-- Dados financeiros excluídos do estado público; consultas privadas por proprietário/admin.
+- `server/finance-handler.js`: API financeira e de identidade em Supabase Edge Functions.
+- `server/payments.js`: recargas Pix/cartão, saques Pix CPF, webhook persistente e conciliação.
+- `server/cash-ledger.js`: livro em centavos com ambientes independentes, idempotência e CAS.
+- `src/game-cash.js`: reservas por mesa/torneio, prêmio e receita administrativa em BRL.
+- `server/finance-access.js`: permissões e bloqueios de admissão em reais, sem confiar no cliente.
+- `server/identity.js`: AES-256-GCM, CPF único por HMAC e arquivos privados, com revisão humana.
+- `supabase/finance-setup.sql`: Vault, configuração privada e agendamento a cada minuto.
+- `scripts/build-finance.mjs`: gera um pacote reproduzível para publicar a função.
 
-## Rotas
+Site Vercel continua servindo tabuleiro, partidas gratuitas e análise Stockfish. A carteira,
+KYC e comandos que movimentam mesas BRL usam a função quando sua consulta health é válida.
+Não existe reenvio automático de POST financeiro pela troca de endpoint ou por timeout.
 
-Todas estão em `/api/index?action=...`, com Cache-Control no-store.
+## Endpoints
 
-| Ação | Método | Acesso |
+Base: `https://kjqovtvhgulwufdzfmif.supabase.co/functions/v1/arena-finance`
+
+| action | Método | Autorização |
 | --- | --- | --- |
-| wallet-summary | GET | Sessão confirmada, carteira própria; admin vê operações |
-| wallet-deposit | POST | Sessão, identidade verificada recente e consentimento |
-| wallet-pix&id=UUID | GET | Titular da cobrança |
-| wallet-withdraw | POST | Titular, identidade, consentimento e saldo BRL |
-| wallet-withdraw-decision | POST | Admin, approve ou reject |
-| asaas-status&check=true | GET | Admin; consulta conexão sem criar operação |
+| health | GET | Metadados públicos, sem segredos |
+| wallet-summary | GET | JWT de usuário confirmado e ativo |
+| wallet-deposit | POST | Titular verificado, consentimento e flags |
+| wallet-pix / wallet-checkout | GET | Titular da cobrança |
+| wallet-withdraw | POST | CPF verificado do titular e saldo disponível |
+| wallet-withdraw-decision | POST | Administrador; reserva antes do envio |
+| wallet-platform-transfer | POST | Administrador verificado; somente receita líquida |
+| command | POST | JWT; permissões do domínio e contexto financeiro do servidor |
+| identity-submit | POST | Titular e consentimento; arquivos privados e cifrados |
+| trust-evidence | GET | Administrador; acesso auditado; prazo de 30 dias |
+| finance-register-webhook | POST | Administrador; criação reivindicada antes do POST |
 | asaas-webhook | POST | Token independente em asaas-access-token |
+| reconcile | POST | Token exclusivo do worker, armazenado no Vault |
 
-Webhook de produção: `https://arena-xadrez.vercel.app/api/index?action=asaas-webhook`.
-Cadastre apenas após verificar a publicação do receptor. Eventos de pagamentos e
-transferências devem ser enviados na versão de API compatível com os campos usados.
+Desativar a verificação *legacy* no gateway apenas nesta função: a implementação valida
+`auth.getUser` e e-mail confirmado nas rotas de usuário e tokens próprios nas outras rotas.
+Não usar `user_metadata` para conceder administração. CORS não substitui autenticação.
+As funções SQL que leem Vault recusam JWT sem papel service_role; anon/authenticated
+não possuem EXECUTE. A configuração fica em schema privado com RLS.
 
-## Configuração privada
+## Regras financeiras
 
-- `ASAAS_ENVIRONMENT`: sandbox ou production. Na ausência, pode ser inferido do prefixo
-  oficial da chave. Prefixo e ambiente contraditórios bloqueiam a integração.
-- `ASAAS_API_KEY`: chave do ambiente correspondente; nunca exposta ao navegador.
-- `ASAAS_WEBHOOK_TOKEN`: segredo independente, 32–255 caracteres, sem espaços.
-  Cadastre exatamente o mesmo valor no webhook Asaas; não reutilize a chave API.
-- `KYC_ENCRYPTION_KEY`: 32 bytes aleatórios em hexadecimal (64 caracteres) ou base64.
-  Preserve esta chave: sua troca sem migração torna documentos anteriores ilegíveis.
-- `ASAAS_BUSINESS_MODEL_APPROVED`: false até confirmação específica do Asaas para
-  torneios/confrontos premiados, computador, carteira e saques. Cadastro aprovado não
-  equivale à aprovação deste modelo.
-- `ASAAS_PRODUCTION_ENABLED`: false até liberação operacional.
-- `ASAAS_WALLET_ENABLED`: false até concluir homologação e itens abaixo.
+Créditos antigos nunca viram reais. Mesas BRL guardam moeda e ambiente desde a criação.
+Cada operação só consome a reserva da própria mesa; saques não usam reservas de partidas.
+Empates preservam fundos. Cancelamentos/ausência e inscrições sem arrecadação suficiente
+retornam fundos. Torneio de prêmio fixo exige pelo menos dois inscritos e arrecadação
+estritamente maior que o prêmio. Reinscrição paga nova entrada e zera a pontuação.
 
-Em sandbox também são necessários webhook, criptografia e flag de carteira. Consultas
-administrativas ao provedor funcionam com chave válida mesmo com pagamentos desligados.
-Salvar variáveis exige nova implantação para surtir efeito. Não usar prefixos públicos.
+Prêmios e receita são contabilizados na mesma transação CAS. Fair play pendente ou
+carteira congelada impede liberação. A admissão BRL exige análise de fair play ativada.
+A receita administrativa pertence ao livro da plataforma; o admin só transfere receita
+líquida após descontar custos de processamento. Depois solicita saque pela própria
+carteira e CPF verificado. Não há retirada de fundos reservados como receita.
 
-## Pendências antes de liberar dinheiro real
+Pix e cartão creditam apenas RECEIVED consultado no Asaas, uma única vez. CONFIRMED
+não libera fundos. Contestação congela carteira. Cartão usa invoiceUrl oficial HTTPS,
+validada por ambiente; PAN/CVV ficam no Asaas. Débito depende da disponibilidade da
+fatura hospedada. Saques implementados: Pix CPF; não existe saque para cartão.
 
-1. Configurar webhook e criptografia e homologar recarga, duplicatas, devolução, saque
-   aprovado/recusado/falho e interrupção de rede em conta Sandbox separada.
-2. Adaptar inscrições, confrontos e liquidação de prêmios ao livro BRL. Os jogos atuais
-   continuam usando créditos antigos; a carteira informa a separação explicitamente.
-3. Conciliação operacional de solicitações incertas, varredura agendada independente
-   de tráfego, custos de saque e saldo disponível do provedor. O worker atual processa
-   até dois eventos por execução e é reativado por webhooks e acessos autenticados.
-4. Reconciliar os custos do provedor com a carteira administrativa e garantir liquidez
-   antes de liberar saques. Não permitir retirada de receita bruta como lucro.
-5. Confirmar aceitação do modelo pelo Asaas e condições comerciais da hospedagem.
-   O plano Hobby da Vercel exige revisar a elegibilidade para uso comercial.
-6. Monitoramento, atendimento a disputas/devoluções e procedimentos de revisão.
+Solicitações ambíguas nunca repetem POST. O worker consulta GET por ID/referência,
+valida valor, moeda, cliente e referência e reprocessa eventos perdidos. Operações não
+localizadas permanecem sob conciliação; não se presume que uma falha de rede cancelou
+uma cobrança/transferência. Revisão de saques é administrativa, não um envio bancário
+irrestrito e automático. Custos, disputas e liquidez precisam ser homologados na conta.
 
-Não habilitar apenas por existir chave API. Esta entrega é uma carteira protegida por
-flags, ainda sem homologação bancária nem ativação dos confrontos em reais.
+## Configuração e homologação
+
+1. Publicar `supabase/finance-setup.sql` somente no Arena. Ele gera no Vault três segredos
+   aleatórios (KYC, webhook e worker), sem revelar valores; reaplicação preserva chaves.
+2. `npm run build:finance`; publicar `supabase/functions/arena-finance/index.ts`.
+3. Cadastrar `ASAAS_API_KEY` **Sandbox** em Edge Functions → Secrets. Não reutilizar chave
+   de produção em Sandbox. A conta Asaas Sandbox é independente da conta de produção.
+4. Entrar com administrador (`geova0448@gmail.com`, lista privada configurável no banco),
+   abrir Carteira e conferir o webhook. O worker o registra automaticamente uma única vez quando a chave correta está configurada; há também um botão administrativo. A função envia o token diretamente ao Asaas.
+   Se a resposta for ambígua, conferir no provedor antes de criar qualquer outro webhook.
+5. Testar com usuários e identidades destinados à homologação: recarga, duplicatas,
+   cartão confirmado/recebido, contestação, saques aprovados/recusados/falhos, perda de
+   conexão, cancelamentos, vitória, empate, torneio lucrativo e devolução por margem.
+   O teste automatizado de provedor `node scripts/homologate-asaas.mjs` só aceita Sandbox,
+   usa dados sintéticos e não altera o banco da Arena. Ele não comprova saque nem webhook:
+   esses resultados são informados separadamente, sem aprovação automática de produção.
+6. Só depois de homologar, registrar aceitação específica do modelo de negócio pelo
+   Asaas e revisar as condições da hospedagem. Cadastro aprovado não equivale a esse aceite.
+7. Ambiente, flags e lista administrativa ficam em `arena_private.finance_config`:
+   `environment`, `wallet_enabled`, `games_enabled`, `model_approved`, `production_enabled`.
+   Tudo começa desligado. Produção exige todas as condições; Sandbox também exige chave,
+   webhook registrado e criptografia. Nunca alterar flags para mascarar pendências.
+
+KYC aqui é coleta privada com revisão humana. Não é consulta governamental, reconhecimento
+facial automatizado nem prova de vida. O titular deve fornecer os documentos reais;
+nenhum agente deve inventar ou aprovar evidências. Após 30 dias, renovar os documentos.
+Fiscalização por câmera continua no backend de partidas e exige configuração própria;
+o KYC financeiro não ativa a câmera nem compartilha a chave automaticamente com Vercel.
+
+## Estado verificado da implantação
+
+A estrutura privada e o cron foram criados no projeto Arena. A função foi publicada e
+health confirmou criptografia disponível, ambiente Sandbox e pagamentos desativados.
+A chave Sandbox do Asaas e a homologação com o provedor ainda dependem de configuração.
+Testes automatizados locais não são apresentados como pagamentos bancários realizados.
+A publicação do frontend Vercel também precisa ser confirmada: o projeto atingiu limite
+anterior de builds. Não declarar produção pronta apenas porque o código foi integrado.
 
 ## Documentação oficial
 
-- https://docs.asaas.com/reference/criar-novo-cliente
-- https://docs.asaas.com/reference/criar-nova-cobranca
-- https://docs.asaas.com/reference/obter-qr-code-para-pagamentos-via-pix
-- https://docs.asaas.com/reference/transferir-para-conta-de-outra-instituicao-ou-chave-pix
-- https://docs.asaas.com/reference/recuperar-saldo-da-conta
 - https://docs.asaas.com/docs/receba-eventos-do-asaas-no-seu-endpoint-de-webhook
-- https://docs.asaas.com/docs/retries-e-idempot%C3%AAncia
-
-
-## Cartão por fatura hospedada
-A recarga agora aceita `method: PIX | CARD`. CARD cria uma cobrança `CREDIT_CARD` no servidor e abre a `invoiceUrl` oficial do Asaas, sem receber número, validade ou CVV na Arena. A fatura pode disponibilizar débito conforme a configuração do Asaas. O endpoint privado `wallet-checkout` confere titular, referência, valor, situação e domínio oficial antes de devolver o link. A mesma referência não pode trocar de método. Aprovação (`CONFIRMED`) não libera saldo: somente recebimento (`RECEIVED`) conciliado uma vez. Contestação congela a carteira.
-
-Documentação: https://docs.asaas.com/docs/cobrancas-via-cartao-de-credito . Saques continuam por Pix CPF do titular; a API de transferências documenta Pix/TED, não crédito para cartão. Estorno de uma compra não equivale a saque.
-
-### Estado de ativação
-Código e testes automatizados não substituem homologação bancária. Antes de ativar produção ainda são necessários: token de webhook separado cadastrado nas duas pontas, chave de criptografia KYC, validação de identidade, aceite do Asaas para o modelo específico de campeonatos/carteira, ensaios sandbox de cobrança/recebimento/contestação/saque e conciliação, integração das partidas e torneios à carteira BRL, e confirmação das configurações operacionais. A chave API de produção, isoladamente, não habilita movimentações. Não habilitar flags para contornar essas pendências. Esta versão não declara dinheiro real homologado nem partidas BRL operacionais.
+- https://docs.asaas.com/reference/criar-novo-webhook
+- https://docs.asaas.com/docs/cobrancas-via-cartao-de-credito
+- https://docs.asaas.com/reference/confirmar-pagamento
+- https://docs.asaas.com/docs/como-adicionar-dinheiro-para-testes
+- https://supabase.com/docs/guides/functions/auth
+- https://supabase.com/docs/guides/functions/schedule-functions
+- https://supabase.com/docs/guides/database/vault

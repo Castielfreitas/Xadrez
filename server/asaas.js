@@ -25,9 +25,9 @@ function date(value){requireValue(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/
 // POST requests are deliberately never retried: externalReference is not a unique key.
 export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={}){
  const status=asaasReadiness(env),key=env.ASAAS_API_KEY;
- async function request(path,body){
+ async function request(path,body,{configuration=false}={}){
   if(!status.environment||!status.apiKeyConfigured||(body&&!status.credentialsConfigured))throw new DomainError('Integração Asaas aguardando configuração segura.',503);
-  if(body&&status.environment==='production'&&(!status.businessModelApproved||!status.productionAuthorized))throw new DomainError('Operação em produção ainda não autorizada para a Arena.',403);
+  if(body&&!configuration&&status.environment==='production'&&(!status.businessModelApproved||!status.productionAuthorized))throw new DomainError('Operação em produção ainda não autorizada para a Arena.',403);
   let response;
   try{response=await fetchImpl(origins[status.environment]+path,{method:body?'POST':'GET',headers:{access_token:key,'User-Agent':'ArenaXadrez/1.0','Content-Type':'application/json',Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(10000),...(body?{body:JSON.stringify(body)}:{})});}
   catch{throw new DomainError('Resposta do Asaas inconclusiva. Concilie a operação antes de tentar novamente.',502);}
@@ -36,7 +36,14 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
   try{return await response.json();}catch{throw new DomainError('Resposta do Asaas inválida. Concilie a operação antes de tentar novamente.',502);}
  }
  return {
+  confirmSandboxPayment(id){requireValue(status.environment==='sandbox','Simulação permitida somente no Sandbox.');return request('/sandbox/payment/'+resource(id,'pay_')+'/confirm',{});},
   getBalance(){return request('/finance/balance');},
+  listWebhooks(){return request('/webhooks');},
+  createWebhook({url,email}){
+   requireValue(typeof url==='string'&&/^https:\/\/[a-z0-9]+\.supabase\.co\/functions\/v1\/arena-finance\?action=asaas-webhook$/.test(url),'URL de webhook inválida.');
+   requireValue(typeof email==='string'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),'E-mail inválido.');
+   return request('/webhooks',{name:'Arena Xadrez '+status.environment,url,email,enabled:true,interrupted:false,authToken:env.ASAAS_WEBHOOK_TOKEN,sendType:'SEQUENTIALLY',events:['PAYMENT_RECEIVED','PAYMENT_CONFIRMED','PAYMENT_REFUNDED','PAYMENT_REFUND_IN_PROGRESS','PAYMENT_CHARGEBACK_REQUESTED','PAYMENT_CHARGEBACK_DISPUTE','PAYMENT_AWAITING_CHARGEBACK_REVERSAL','TRANSFER_CREATED','TRANSFER_PENDING','TRANSFER_DONE','TRANSFER_FAILED','TRANSFER_CANCELLED']},{configuration:true});
+  },
   async createCustomer({name,cpf,email,externalReference}){
    requireValue(typeof name==='string'&&name.trim().length>=5&&name.length<=120,'Nome completo inválido.');
    requireValue(validCpf(cpf),'CPF inválido.');
@@ -60,6 +67,11 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
    const cpf=String(verifiedCpf).replace(/\D/g,''),destination=String(pixCpf).replace(/\D/g,'');
    requireValue(cpf===destination,'O saque deve usar uma chave Pix CPF do mesmo titular.');
    return request('/transfers',{value:cents(amountCents),pixAddressKey:destination,pixAddressKeyType:'CPF',externalReference:reference(externalReference),description:'Saque Arena Xadrez'});
+  },
+  async findTransfers(externalReference,createdAt=Date.now()){
+   reference(externalReference);requireValue(Number.isFinite(createdAt),'Data da transferência inválida.');const since=date(new Date(createdAt-86400000).toISOString().slice(0,10)),matches=[];
+   for(let offset=0;offset<500;offset+=100){const page=await request('/transfers?limit=100&offset='+offset+'&dateCreated%5Bge%5D='+since);requireValue(Array.isArray(page.data),'Lista de transferências inválida.');matches.push(...page.data.filter(t=>t.externalReference===externalReference));if(!page.hasMore)return {data:matches};}
+   throw new DomainError('Histórico extenso: concilie esta transferência antes de continuar.',409);
   },
   getTransfer(id){return request('/transfers/'+resource(id,''));},
  };

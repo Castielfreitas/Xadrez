@@ -1,0 +1,6 @@
+[functions.arena-finance]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/arena-finance/index.ts"
+# Each route authenticates itself: verified user JWT, independent webhook token,
+# or independent worker token. Health exposes only public readiness metadata.
