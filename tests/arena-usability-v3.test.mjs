@@ -25,7 +25,7 @@ test('board movement and its sound finish promptly',()=>{
 test('capture uses a crisp full-band sound with volume control and dynamic compression',()=>{
  assert.match(sound,/function materialNoise\(/);
  assert.match(sound,/function crumble\(/);
- assert.match(sound,/const duration=\.74/);
+ assert.match(sound,/const duration=1\.28/);
  assert.match(sound,/gain\.connect\(master\)/);
  assert.match(sound,/createDynamicsCompressor/);
 });
