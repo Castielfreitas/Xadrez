@@ -240,3 +240,20 @@ header,.breadcrumb,.header-right{font-size:14px}
  .tournament-detail-actions>.button{flex:1 1 180px}
  .tournament-cover>span{font-size:12px!important}
 }
+
+/* The result modal uses the same rendered 3D king model as the actual chessboard. */
+.result-card .result-emblem:has(.king-result-piece){height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;line-height:1}
+.result-card .king-result-piece{position:relative;display:inline-flex;width:116px;height:124px;flex:0 0 116px;filter:drop-shadow(0 3px 2px #be934e55) drop-shadow(0 12px 10px #000b)}
+.result-card .king-result-piece .piece-real{position:absolute;inset:0;display:block;width:100%;height:100%;background-repeat:no-repeat;filter:drop-shadow(3px 8px 5px #000a)}
+.result-card .king-result-piece .chess-piece-svg{display:none}
+.result-card.result-loss .king-result-piece{filter:drop-shadow(0 2px 2px #9385745c) drop-shadow(0 12px 10px #000b)}
+@media(max-width:520px){.result-card .result-emblem:has(.king-result-piece){height:105px}.result-card .king-result-piece{width:88px;height:100px;flex-basis:88px}}
+
+/* Admin finance preflight is informational and cannot activate money movement. */
+.production-preflight{margin:16px 0 12px;padding:14px;background:linear-gradient(135deg,#252322,#1c1c1e);border:1px solid #715c3c;border-radius:12px;color:#eee6d8}
+.production-preflight h4{margin:0 0 12px;font-size:17px;color:#f5dca4}
+.production-preflight .preflight-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:7px 11px}
+.production-preflight .preflight-chip{font-size:12px;line-height:1.5;padding:7px 10px;border-radius:6px;border:1px solid #574838;background:#322c26;overflow-wrap:anywhere}
+.production-preflight .preflight-chip.is-ok{border-color:#6a765e;color:#c9dcc0}
+.production-preflight .preflight-chip.is-pending{border-color:#806045;color:#f5c79e}
+.production-preflight>small{display:block;margin-top:12px;font-size:12px;color:#c8bba6}
