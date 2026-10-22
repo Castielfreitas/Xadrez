@@ -1,4 +1,4 @@
-import {paymentsStatus,walletSummary,createDeposit,depositQr,createWithdrawal,decideWithdrawal,receivePaymentEvent,processPaymentEvents} from '../server/payments.js';
+import {paymentsStatus,walletSummary,createDeposit,depositQr,depositCheckout,createWithdrawal,decideWithdrawal,receivePaymentEvent,processPaymentEvents} from '../server/payments.js';
 import {createAsaasClient} from '../server/asaas.js';
 import {processSandra} from '../server/sandra.js';
 import {trustConfigured,identityPayload,putPrivate,readPrivate,unseal,privateImage,auditEvidenceAccess,cleanupTrust} from '../server/identity.js';
@@ -29,12 +29,13 @@ export default async function handler(req,res){
  const {data:row,error}=await client.from('arena_state').select('state,revision').eq('id','main').single();if(error)throw new Error('Database unavailable');waitUntil(processScheduledTournaments(client).catch(()=>{}));if(actor){waitUntil(processSandra(client).catch(()=>{}));waitUntil(processPaymentEvents(client).catch(()=>{}));}if(row.state.settings.analysisEnabled)waitUntil(processAnalysis(client).catch(()=>{}));
  if(action==='trust-cleanup'&&req.method==='GET'){await cleanupTrust(client);return res.status(200).json({ok:true});}waitUntil(cleanupTrust(client).catch(()=>{}));
  if(req.method==='GET'&&action==='state')return res.status(200).json({state:publicState(row.state,actor?.id,actor?.admin),revision:row.revision,actor:actor?{id:actor.id,admin:actor.admin}:null});
- if(['wallet-summary','wallet-pix','asaas-status'].includes(action)){
+ if(['wallet-summary','wallet-pix','wallet-checkout','asaas-status'].includes(action)){
   if(!actor)throw new DomainError('Entre na sua conta.',401);
   if(req.method!=='GET')throw new DomainError('Método não permitido.',405);
   if(action==='wallet-summary'&&!row.state.players[actor.id])throw new DomainError('Conclua seu cadastro.',403);
   if(action==='wallet-summary')return res.status(200).json(walletSummary(row.state,actor));
   if(action==='wallet-pix')return res.status(200).json(await depositQr(client,actor,query.get('id')));
+  if(action==='wallet-checkout')return res.status(200).json(await depositCheckout(client,actor,query.get('id')));
   if(!actor.admin)throw new DomainError('Acesso exclusivo da administração.',403);
   if(query.get('check')==='true'){await createAsaasClient().getBalance();return res.status(200).json({connected:true,status:paymentsStatus()});}
   return res.status(200).json({status:paymentsStatus()});

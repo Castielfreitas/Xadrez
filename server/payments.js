@@ -1,6 +1,6 @@
-import {createAsaasClient,asaasReadiness,authenticateAsaasWebhook} from './asaas.js';
+import {createAsaasClient,asaasReadiness,authenticateAsaasWebhook,cardInvoiceUrl} from './asaas.js';
 import {trustConfigured,unseal,seal} from './identity.js';
-import {PAYMENT_NOTICE,check,cashBook,cashView,beginDeposit,bindCustomer,bindPayment,settleDeposit,requestWithdrawal,claimWithdrawal,bindTransfer,settleWithdrawal,rejectWithdrawal,operationId} from './cash-ledger.js';
+import {PAYMENT_NOTICE,check,moneyCents,cashBook,cashView,beginDeposit,bindCustomer,bindPayment,settleDeposit,requestWithdrawal,claimWithdrawal,bindTransfer,settleWithdrawal,rejectWithdrawal,operationId} from './cash-ledger.js';
 
 export function paymentsStatus(env=process.env){const p=asaasReadiness(env);return {...p,identityConfigured:trustConfigured(),paymentsEnabled:Boolean(p.credentialsConfigured&&trustConfigured()&&env.ASAAS_WALLET_ENABLED==='true'&&(p.environment==='sandbox'||p.businessModelApproved&&p.productionAuthorized))};}
 export async function cashTransaction(db,mutate){
@@ -20,22 +20,31 @@ function enabled(env){const status=paymentsStatus(env);check(status.paymentsEnab
 function publicOperation({sealedCpf,...operation}){return operation;}
 
 export async function createDeposit(db,actor,input,{env=process.env,provider=createAsaasClient({env}),now=Date.now()}={}){
- const environment=enabled(env);check(input.consent===PAYMENT_NOTICE,'Confirme o compartilhamento dos dados de cobrança.');operationId(input.id);
- const reservation=await cashTransaction(db,state=>{const identity=financialIdentity(state,actor.id);return {...beginDeposit(state,environment,actor.id,input.id,input.amountCents,now),identity};});
+ const environment=enabled(env),method=input.method||'PIX';check(['PIX','CARD'].includes(method),'Forma de pagamento inválida.');check(input.consent===PAYMENT_NOTICE,'Confirme o compartilhamento dos dados de cobrança.');operationId(input.id);
+ const reservation=await cashTransaction(db,state=>{const identity=financialIdentity(state,actor.id);return {...beginDeposit(state,environment,actor.id,input.id,input.amountCents,now,method),identity};});
  let d=reservation.result.operation;
  if(!reservation.result.claimed)return publicOperation(d);
  try{
   if(!d.customerId){const identity=reservation.result.identity;const customer=await provider.createCustomer({name:identity.name,cpf:identity.cpf,email:actor.email,externalReference:'arena_'+actor.id});await cashTransaction(db,state=>bindCustomer(state,environment,d.id,customer.id));d={...d,customerId:customer.id};}
   const dueDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));
-  const payment=await provider.createPixCharge({customer:d.customerId,amountCents:d.amount,dueDate,externalReference:d.id});
+  const payment=await provider[method==='CARD'?'createCardCharge':'createPixCharge']({customer:d.customerId,amountCents:d.amount,dueDate,externalReference:d.id});
   const stored=await cashTransaction(db,state=>{bindPayment(state,environment,d.id,payment.id);return cashBook(state,environment).deposits[d.id];});return publicOperation(stored.result);
  }catch(error){await cashTransaction(db,state=>{const op=cashBook(state,environment).deposits[d.id];if(op&&op.status==='creating')op.status='uncertain';});throw error;}
 }
 export async function depositQr(db,actor,id,{env=process.env,provider=createAsaasClient({env})}={}){
  operationId(id);const p=asaasReadiness(env);check(p.environment,'Ambiente financeiro não configurado.',503);const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();check(!error&&row,'Carteira indisponível.',503);
- active(row.state,actor.id);const d=cashBook(row.state,p.environment).deposits[id];check(d?.user===actor.id,'Recarga não encontrada.',404);check(d.paymentId&&d.status==='pending','Recarga indisponível para pagamento.');
+ active(row.state,actor.id);const d=cashBook(row.state,p.environment).deposits[id];check(d?.user===actor.id,'Recarga não encontrada.',404);check((d.method||'PIX')==='PIX'&&d.paymentId&&d.status==='pending','Recarga indisponível para pagamento.');
  const qr=await provider.getPixQrCode(d.paymentId);check(typeof qr.encodedImage==='string'&&qr.encodedImage.length<1000000&&/^[A-Za-z0-9+/=]+$/.test(qr.encodedImage)&&typeof qr.payload==='string'&&qr.payload.length<=2048,'QR Code inválido.',502);
  return {encodedImage:qr.encodedImage,payload:qr.payload,expirationDate:qr.expirationDate};
+}
+export async function depositCheckout(db,actor,id,{env=process.env,provider=createAsaasClient({env})}={}){
+ operationId(id);const environment=asaasReadiness(env).environment;check(environment,'Ambiente financeiro não configurado.',503);
+ const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();check(!error&&row,'Carteira indisponível.',503);
+ active(row.state,actor.id);const d=cashBook(row.state,environment).deposits[id];check(d?.user===actor.id,'Recarga não encontrada.',404);
+ check(d.method==='CARD'&&d.paymentId&&d.status==='pending','Recarga indisponível para pagamento.');
+ const payment=await provider.getPayment(d.paymentId);
+ check(payment.id===d.paymentId&&payment.customer===d.customerId&&payment.externalReference===d.id&&moneyCents(payment.value)===d.amount&&['CREDIT_CARD','DEBIT_CARD'].includes(payment.billingType)&&!payment.deleted&&['PENDING','OVERDUE'].includes(payment.status),'Cobrança indisponível ou divergente.',409);
+ return {url:cardInvoiceUrl(payment.invoiceUrl,environment)};
 }
 export async function createWithdrawal(db,actor,input,{env=process.env}={}){
  const environment=enabled(env);check(input.consent===PAYMENT_NOTICE,'Confirme as condições do saque.');
