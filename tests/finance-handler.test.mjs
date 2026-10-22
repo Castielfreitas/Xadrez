@@ -45,3 +45,12 @@ test('uncertain webhook with duplicates or unverifiable token configuration rema
   assert.equal(db.state.cash.sandbox.webhookSetup.status,'uncertain');
  }
 });
+
+
+test('Asaas webhook URL uses the configured Supabase project, not the incoming request host',async()=>{
+ const {financeWebhookEndpoint}=await import('../server/finance-handler.js');
+ assert.equal(financeWebhookEndpoint({SUPABASE_URL:'https://kjqovtvhgulwufdzfmif.supabase.co'}),'https://kjqovtvhgulwufdzfmif.supabase.co/functions/v1/arena-finance?action=asaas-webhook');
+ for(const bad of ['http://kjqovtvhgulwufdzfmif.supabase.co','https://evil.test','https://kjqovtvhgulwufdzfmif.supabase.co.evil.test']){
+  assert.throws(()=>financeWebhookEndpoint({SUPABASE_URL:bad}));
+ }
+});
