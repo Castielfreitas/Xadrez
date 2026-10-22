@@ -194,3 +194,7 @@ header,.breadcrumb,.header-right{font-size:14px}
  .page-heading>.button{font-size:13px}
  .board-page .board-player b{font-size:13px}
 }
+
+/* Projeção clara do primeiro resultado bruto positivo em reais. */
+.viability-positive-amount{display:block;margin-top:6px;color:#f4dca6;font-size:15px;line-height:1.35;font-weight:750;font-variant-numeric:tabular-nums}
+@media(max-width:760px){.viability-positive-amount{font-size:14px}}
