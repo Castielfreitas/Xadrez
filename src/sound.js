@@ -31,7 +31,7 @@ function crumble(ctx){
  materialNoise(ctx,duration,(t,white,grain,low)=>{
   const initial=Math.min(1,t/.014)*Math.exp(-t/0.25);
   const buckle=(t>.075&&t<.31)?0.8:0.45;
-  const debris=Math.exp(-Math.max(0,t-.22)/.13);
+  const debris=Math.exp(-Math.max(0,t-.22)/.13)*Math.min(1,t/.035);
   const rumble=Math.sin(2*Math.PI*(82-40*t)*t)*Math.exp(-t/.16);
   return (low*.95+grain*.36+white*.10)*initial*buckle
        +grain*.36*debris*Math.max(0,1-t/.49)
@@ -47,7 +47,7 @@ function slide(ctx){
   const rise=Math.min(1,t/.018);
   const travel=Math.max(0,1-t/.17);
   const roughness=.72+.16*Math.sin(t*355);
-  const landing=Math.exp(-Math.pow((t-.139)/.022,2));
+  const landing=Math.exp(-Math.pow((t-.139)/.022,2))*Math.min(1,t/.015);
   return (low*.86+grain*.30+white*.06)*rise*travel*roughness
        +(low*.42+grain*.14)*landing;
  },.80);
