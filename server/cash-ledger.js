@@ -32,14 +32,17 @@ export function settleDeposit(state,environment,payment,now=Date.now()){
  const b=cashBook(state,environment),d=b.deposits[payment.externalReference];if(!d)return false;
  check(((d.method||'PIX')==='PIX'?payment.billingType==='PIX':['CREDIT_CARD','DEBIT_CARD'].includes(payment.billingType))&&payment.customer===d.customerId&&moneyCents(payment.value)===d.amount,'Dados de cobrança divergentes.',409);
  bindPayment(state,environment,d.id,payment.id);
- if(payment.status==='RECEIVED'&&!payment.deleted&&!d.credited){
+ const completedRefundCents=Array.isArray(payment.refunds)?payment.refunds.filter(r=>r?.status==='DONE').reduce((sum,r)=>sum+moneyCents(r.value),0):0;
+ const fullyRefunded=payment.status==='REFUNDED'||completedRefundCents>=d.amount;
+ if(payment.status==='RECEIVED'&&!fullyRefunded&&!payment.deleted&&!d.credited){
   check(!d.reversed,'Cobrança devolvida não pode ser creditada.',409);const net=moneyCents(payment.netValue);check(net<=d.amount,'Valor líquido inválido.');
   post(b,d.user,d.amount,0,'deposit',d.id,now);d.credited=true;d.status='credited';d.receivedAt=now;d.fee=d.amount-net;b.processingFees+=d.fee;
  }
- if(payment.status==='REFUNDED'){
+ if(fullyRefunded){
   if(d.credited&&!d.reversed)post(b,d.user,-d.amount,0,'deposit_refund',d.id,now,{debt:true});
   d.reversed=true;d.status='refunded';
  }
+ if(completedRefundCents>0&&!fullyRefunded){cashAccount(b,d.user).frozen=true;d.status='review';}
  if(['REFUND_REQUESTED','REFUND_IN_PROGRESS','PARTIALLY_REFUNDED','CHARGEBACK_REQUESTED','CHARGEBACK_DISPUTE','AWAITING_CHARGEBACK_REVERSAL'].includes(payment.status)){
   cashAccount(b,d.user).frozen=true;d.status='review';
  }
