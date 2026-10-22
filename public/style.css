@@ -62,3 +62,53 @@ html{scrollbar-gutter:stable}.board-layout{align-items:start}.board-layout>secti
 .board-preferences{width:32px;height:30px;margin:0 0 4px auto;padding:0;border:0;background:transparent;z-index:20}.board-preferences>summary{width:32px;height:30px;display:grid;place-items:center;border:1px solid var(--border);border-radius:6px;background:var(--panel);list-style:none}.board-preferences>summary::-webkit-details-marker{display:none}.board-preferences>summary svg{width:17px;height:17px}.board-preferences[open]{height:30px}.board-preferences[open]>label{position:absolute;right:0;top:28px;width:240px;box-sizing:border-box;margin:4px 0;padding:12px;background:var(--panel);border:1px solid var(--border);border-radius:7px;box-shadow:0 8px 24px #0008}.board-preferences>small{display:none}.sound-volume{flex-wrap:nowrap;max-width:100%;min-width:0}.sound-volume input{width:110px;min-width:60px;flex:1;touch-action:pan-y}.sound-volume output{min-width:38px;font-variant-numeric:tabular-nums}
 /* Desktop lessons: the full board and coaching share one viewport. */
 .learn-page main>header{height:60px}.learn-page .content{padding:18px 24px}.learn-page #learn-root .page-heading{margin-bottom:16px}.learn-page #learn-root h1{font-size:28px;margin:8px 0}.learn-page #learn-root .page-heading p{margin:0}.learn-layout{grid-template-columns:180px minmax(280px,1fr) minmax(230px,270px);gap:16px;max-width:1400px;margin:auto}.lesson-stage{min-width:0;display:flex;align-items:flex-start;justify-content:center}.lesson-board{width:min(100%,calc(100dvh - 220px));max-width:650px;flex-shrink:1}.lesson-coach{min-width:0;max-height:calc(100dvh - 175px);overflow-y:auto}.lesson-list{padding:14px;max-height:calc(100dvh - 265px);display:flex;flex-direction:column;overflow:hidden}.lesson-list label{font-size:12px;margin:8px 0}.lesson-list select{width:100%;margin-top:6px}.lesson-list progress{width:100%;accent-color:var(--lime)}.lesson-scroll{overflow-y:auto;min-height:0}.lesson-choice{padding:9px 5px;font-size:12px}.lesson-choice>span{width:22px;height:22px}.lesson-instruction{padding:16px;margin-bottom:12px}.lesson-instruction h2{font-size:21px}.lesson-instruction p,.lesson-answer p{font-size:14px;line-height:1.6}.lesson-answer{margin:0 0 12px;padding:16px}.lesson-answer .button-row{flex-wrap:wrap}.lesson-answer .button{padding:10px 12px;font-size:12px}.lesson-history{padding:12px}.lesson-history p{line-height:1.7;font-size:12px}@media(max-width:1100px){.learn-layout{grid-template-columns:minmax(280px,1fr) 260px}.lesson-list{grid-column:1/-1;max-height:130px}.lesson-list>h2,.lesson-list>p,.lesson-list>progress,.lesson-list>label{display:none}.lesson-scroll{display:flex;overflow-x:auto}.lesson-choice{min-width:160px}.lesson-board{width:min(100%,calc(100dvh - 310px))}.lesson-coach{max-height:calc(100dvh - 290px)}}@media(max-width:760px){.learn-layout{grid-template-columns:1fr;gap:12px}.lesson-list{max-height:95px;display:block}.lesson-stage{order:2}.lesson-coach{order:1;max-height:none;overflow:visible;display:grid;grid-template-columns:1fr}.lesson-board{width:min(100%,calc(100dvh - 280px));min-width:260px}.lesson-instruction{margin:0 0 8px}.lesson-instruction p{margin:8px 0}.lesson-history{display:none}.lesson-answer p{min-height:0;margin:0 0 8px}.learn-page .content{padding:12px}.lesson-coach .lesson-answer{margin-bottom:0}}
+
+
+/* Arena visual system: matte graphite, warm gold, restrained emerald states */
+:root { --arena-gold:#e9bd70;--arena-gold-light:#f8deaa;--arena-graphite:#1b1b1d;--arena-metal:#4c473e;--arena-success:#22c55e; }
+.hero,.tournament-card,.panel,.result-card{box-shadow:0 14px 32px rgba(0,0,0,.18),inset 0 1px 0 rgba(248,222,170,.04)}
+.hero{background:radial-gradient(ellipse at 80% 20%,rgba(174,124,49,.12),transparent 54%),linear-gradient(145deg,#282627,#171719)!important}
+.hero-art{filter:saturate(.73) sepia(.12)}
+.hero-board{filter:saturate(.55) sepia(.17) drop-shadow(0 12px 13px rgba(0,0,0,.4))}
+.hero-copy h1,.page-heading h1,.tournament-card h2,.result-card h2{font-family:'Arial Narrow','Arial Black','Segoe UI',system-ui,sans-serif;font-stretch:condensed;letter-spacing:.035em;font-weight:850}
+.hero-copy h1,.tournament-cover>span{text-transform:uppercase}
+.tournament-card{background:linear-gradient(160deg,#282628,#1a1a1d);border-color:#554736}
+.tournament-cover,.cover-art{background-color:#423423!important;background-blend-mode:luminosity!important;isolation:isolate}
+.tournament-cover:after,.cover-art:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(130deg,rgba(16,15,15,.46),rgba(164,112,34,.12) 55%,rgba(23,19,17,.5));mix-blend-mode:color;z-index:1}
+.tournament-cover>span{position:relative;z-index:2;letter-spacing:.18em;color:#ffe4a2;text-shadow:0 2px 6px #080808}
+.tournament-cover .uploaded-cover{filter:grayscale(.68) sepia(.28) saturate(.65)}
+.cover-art{position:relative}
+.tournament-card-head .badge:not(.green),.tournament-card .prize{color:#eac67e}
+.tournament-card .badge.green{background:rgba(237,177,73,.1);border-color:#886834;color:#f0c979}
+.nav svg,.button svg,.stat-strip svg,.tournament-card-head svg,.player-cell svg,.floating-tag svg,.sidebar svg,.result-emblem,.result-card .result-emblem,.page-heading svg{
+ color:var(--arena-gold);filter:drop-shadow(0 1px 0 #fff3c740) drop-shadow(1px 2px 0 #61421c) drop-shadow(0 4px 4px rgba(0,0,0,.55));transition:filter .15s,transform .15s;
+}
+button:hover>svg,.nav:hover svg,.button:hover svg{transform:translateY(-1px);filter:drop-shadow(0 1px 0 #fff4cb) drop-shadow(1px 3px 1px #66451d) drop-shadow(0 6px 7px #000a)}
+.result-card .result-emblem{font-size:64px;color:var(--arena-gold-light);text-shadow:1px 2px 0 #8b6124,3px 5px 1px #4c3418,7px 12px 12px #000}
+.result-loss .result-emblem{color:#c6a97a}
+.result-draw .result-emblem{color:#d4c59d}
+.standing-live{font-size:11px;color:var(--arena-success);font-weight:600;letter-spacing:0;text-transform:none;margin-left:8px}
+.tournament-standing{margin:18px 0 12px;padding:12px;background:rgba(9,10,10,.2);border:1px solid #494037;border-radius:12px}
+.tournament-standing h3{margin:0 0 12px;font-size:14px}
+.tournament-standing .table-wrap{max-height:320px;overflow:auto}
+.tournament-standing table{font-size:12px;width:100%;min-width:330px}
+.tournament-standing td,.tournament-standing th{padding:8px 6px}
+.tournament-standing .player-cell{gap:7px}
+.tournament-standing .is-self{background:rgba(233,189,112,.09)}
+.tournament-country{white-space:nowrap}
+.tournament-countdown{display:flex;gap:8px;align-items:center;color:#e8c788;font-size:13px;background:rgba(200,150,70,.08);border:1px solid #5b4831;border-radius:7px;padding:9px 12px}
+.tournament-countdown strong{font-variant-numeric:tabular-nums}
+.tournament-countdown svg{width:17px;height:17px}
+.tournament-refund-reason{border-left:3px solid #e9bd70;padding:11px 13px;background:rgba(209,154,75,.09);color:#f4ddad;line-height:1.55}
+.tournament-prize-preview{padding:18px;border-radius:10px;background:#1c1c1f;border:1px solid #5a4935;color:#e7dfd1}
+.viability-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.viability-grid>div{padding:12px;border:1px solid #514838;border-radius:8px;background:linear-gradient(150deg,#292726,#1a1a1b)}
+.viability-grid small{display:block;color:#b9a98a;margin-bottom:6px}
+.viability-grid b{font-size:16px;color:#f3d59a}
+.tournament-prize-preview p{margin:12px 0 8px}
+.tournament-prize-preview>small{color:#bfb5a4;line-height:1.55}
+.modes-strip>div{min-width:0}
+.modes-strip b{color:#f5d99d}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #ebc67b;outline-offset:2px}
+@media(max-width:760px){.viability-grid{grid-template-columns:1fr}.tournament-standing{padding:8px}.tournament-standing table{min-width:305px}.hero-copy h1{letter-spacing:0}}
+@media(prefers-reduced-motion:reduce){.nav svg,.button svg,.stat-strip svg{transition:none}}
