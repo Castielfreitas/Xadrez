@@ -17,13 +17,15 @@ test('mode selection visibly persists and exposes accessible active state in lob
  assert.match(css,/\.setup-tabs button\.is-selected/);
 });
 test('board movement and its sound finish promptly',()=>{
- assert.match(app,/duration:105,easing/);
- assert.match(sound,/const duration=\.115/);
- assert.match(css,/transition-duration:\.10s!important/);
+ assert.match(app,/duration:0,fill:'both'/);
+ assert.match(app,/pendingVisualMove=\{id:game.id,baseFen:game.fen,ply,game:predicted\}/);
+ assert.match(sound,/const duration=\.18/);
+ assert.match(css,/transition-duration:0ms!important/);
 });
 test('capture uses a crisp full-band sound with volume control and dynamic compression',()=>{
- assert.match(sound,/noise\*\.61\+low\*\.39/);
- assert.match(sound,/gain\.gain\.setValueAtTime\(\.94,at\)/);
+ assert.match(sound,/function materialNoise\(/);
+ assert.match(sound,/function crumble\(/);
+ assert.match(sound,/const duration=\.49/);
  assert.match(sound,/gain\.connect\(master\)/);
  assert.match(sound,/createDynamicsCompressor/);
 });
@@ -39,4 +41,11 @@ test('original dimensional favicon is restored and text and icons are enlarged',
  assert.match(css,/\.brand \.brand-knight\{width:60px/);
  assert.match(css,/\.mode-card>svg:first-child\{width:34px/);
  assert.match(css,/\.nav\{font-size:14px/);
+});
+
+test('menu symbols are slim and dimensional only through subtle shadows',()=>{
+ assert.match(app,/stroke-width="1.65"/);
+ assert.match(css,/\.nav svg\.arena-menu-icon/);
+ assert.match(css,/stroke-width:1.65!important/);
+ assert.doesNotMatch(app,/id="arena-3d-bevel"/);
 });
