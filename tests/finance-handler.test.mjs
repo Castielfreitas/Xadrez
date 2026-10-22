@@ -74,3 +74,18 @@ test('credited Sandbox deposit is polled for completed refunds and debited exact
  assert.equal(calls,2);
  assert.equal(db.state.cash.sandbox.ledger.filter(v=>v.type==='deposit_refund').length,1);
 });
+
+
+test('reconciliation confirms a refunded payment using the Asaas refunds listing',async()=>{
+ const s=initialState(),ref='d0000000-0000-4000-8000-000000000998';
+ beginDeposit(s,'sandbox','a',ref,1000,1,'PIX');bindCustomer(s,'sandbox',ref,'cus_test');bindPayment(s,'sandbox',ref,'pay_test');
+ const db=database(s);
+ const provider={getPayment:async()=>({id:'pay_test',externalReference:ref,customer:'cus_test',billingType:'PIX',value:10,netValue:9.01,status:'RECEIVED'}),listPaymentRefunds:async()=>({data:[{status:'CANCELLED',value:10},{status:'DONE',value:10}]})};
+ await reconcileWallet(db,{env,provider,now:100000});
+ assert.equal(db.state.cash.sandbox.accounts.a.available,1000);
+ const r=await reconcileWallet(db,{env,provider,now:3700000});
+ assert.equal(r.checked,1);assert.equal(r.errors,0);
+ assert.equal(db.state.cash.sandbox.accounts.a.available,0);
+ assert.equal(db.state.cash.sandbox.deposits[ref].reversed,true);
+ assert.equal(db.state.cash.sandbox.ledger.filter(v=>v.type==='deposit_refund').length,1);
+});
