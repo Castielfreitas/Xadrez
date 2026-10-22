@@ -257,3 +257,25 @@ header,.breadcrumb,.header-right{font-size:14px}
 .production-preflight .preflight-chip.is-ok{border-color:#6a765e;color:#c9dcc0}
 .production-preflight .preflight-chip.is-pending{border-color:#806045;color:#f5c79e}
 .production-preflight>small{display:block;margin-top:12px;font-size:12px;color:#c8bba6}
+
+
+/* October 2026: Chess icons should look refined, not artificially thickened. */
+.nav svg.arena-menu-icon,.button svg.arena-menu-icon,.mode-card svg.arena-menu-icon,
+.sidebar svg.arena-menu-icon,.stat-strip svg.arena-menu-icon,
+.page-heading svg.arena-menu-icon,.setup-tabs svg.arena-menu-icon{
+  stroke-width:1.65!important;
+  color:#e8c785;
+  filter:drop-shadow(0 1px .5px rgba(25,18,9,.55))!important;
+  transform:none!important;
+}
+.nav:hover svg.arena-menu-icon,.button:hover svg.arena-menu-icon,
+.mode-card:hover svg.arena-menu-icon{filter:drop-shadow(0 1px 1px rgba(28,20,9,.5))!important;transform:none!important}
+.nav.active svg.arena-menu-icon{color:#ffdd9a;stroke-width:1.75!important}
+.sidebar .nav svg.arena-menu-icon{width:20px;height:20px}
+.button svg.arena-menu-icon{width:18px;height:18px}
+/* No cinematic sliding delay for the main playing surface, including blitz. */
+.board .piece,.board .piece-real,.square .piece,.square .piece-real{
+  transition-duration:0ms!important;animation-duration:0ms!important;
+}
+/* Capture debris continues to be visible; only the moving chess pieces snap. */
+.capture-shard{animation-duration:380ms!important}
