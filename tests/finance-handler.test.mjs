@@ -54,3 +54,23 @@ test('Asaas webhook URL uses the configured Supabase project, not the incoming r
   assert.throws(()=>financeWebhookEndpoint({SUPABASE_URL:bad}));
  }
 });
+
+
+test('credited Sandbox deposit is polled for completed refunds and debited exactly once',async()=>{
+ const s=initialState();s.players.a={status:'active'};const ref='refund_full_test';
+ beginDeposit(s,'sandbox','a',ref,2000,1,'PIX');bindCustomer(s,'sandbox',ref,'cus_test');bindPayment(s,'sandbox',ref,'pay_test');
+ const db=database(s);let calls=0;
+ const provider={getPayment:async()=>{calls++;return {id:'pay_test',externalReference:ref,customer:'cus_test',billingType:'PIX',value:20,netValue:19,status:'RECEIVED',refunds:calls>=2?[{status:'DONE',value:20}]:[]}}};
+ await reconcileWallet(db,{env,provider,now:100000});
+ assert.equal(db.state.cash.sandbox.accounts.a.available,2000);
+ await reconcileWallet(db,{env,provider,now:100100});
+ assert.equal(calls,1);
+ const result=await reconcileWallet(db,{env,provider,now:3700000});
+ assert.equal(result.checked,1);
+ assert.equal(db.state.cash.sandbox.accounts.a.available,0);
+ assert.equal(db.state.cash.sandbox.deposits[ref].status,'refunded');
+ assert.equal(db.state.cash.sandbox.deposits[ref].reversed,true);
+ await reconcileWallet(db,{env,provider,now:7400000});
+ assert.equal(calls,2);
+ assert.equal(db.state.cash.sandbox.ledger.filter(v=>v.type==='deposit_refund').length,1);
+});
