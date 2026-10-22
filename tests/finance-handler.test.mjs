@@ -57,7 +57,7 @@ test('Asaas webhook URL uses the configured Supabase project, not the incoming r
 
 
 test('credited Sandbox deposit is polled for completed refunds and debited exactly once',async()=>{
- const s=initialState();s.players.a={status:'active'};const ref='refund_full_test';
+ const s=initialState();s.players.a={status:'active'};const ref='d0000000-0000-4000-8000-000000000999';
  beginDeposit(s,'sandbox','a',ref,2000,1,'PIX');bindCustomer(s,'sandbox',ref,'cus_test');bindPayment(s,'sandbox',ref,'pay_test');
  const db=database(s);let calls=0;
  const provider={getPayment:async()=>{calls++;return {id:'pay_test',externalReference:ref,customer:'cus_test',billingType:'PIX',value:20,netValue:19,status:'RECEIVED',refunds:calls>=2?[{status:'DONE',value:20}]:[]}}};
