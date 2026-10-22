@@ -6,7 +6,7 @@ import { poolFor, getRating, rateGame } from './rating.js';
 import { Chess } from 'chess.js';
 
 export const SANDRA='arena-sandra';
-function ensureSandra(s,now){s.players[SANDRA]??={id:SANDRA,name:'Sandra - computador',username:'sandra_stockfish',bot:true,rating:3500,ratingVerified:false,status:'active',available:0,reserved:0,joinedAt:now,lastSeen:now};return s.players[SANDRA];}
+function ensureSandra(s,now){s.players[SANDRA]??={id:SANDRA,name:'Sandra - computador',username:'sandra_computador',bot:true,rating:3500,ratingVerified:false,status:'active',available:0,reserved:0,joinedAt:now,lastSeen:now};return s.players[SANDRA];}
 export class DomainError extends Error { constructor(message, status=400) { super(message); this.status=status; } }
 const requireThat=(ok,msg,status=400)=>{if(!ok) throw new DomainError(msg,status);};
 const integer=(value,min,max)=>Number.isSafeInteger(value)&&value>=min&&value<=max;
