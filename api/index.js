@@ -1,3 +1,5 @@
+import {processScheduledTournaments} from '../server/tournament-scheduler.js';
+import {financialActor} from '../server/finance-access.js';
 import {paymentsStatus,walletSummary,createDeposit,depositQr,depositCheckout,createWithdrawal,decideWithdrawal,receivePaymentEvent,processPaymentEvents} from '../server/payments.js';
 import {createAsaasClient} from '../server/asaas.js';
 import {processSandra} from '../server/sandra.js';
@@ -60,7 +62,7 @@ export default async function handler(req,res){
  // Compare-and-swap retries make reservations, acceptance and settlement atomic.
  let current=row;
  for(let attempt=0;attempt<5;attempt++){
- const next=applyCommand(current.state||initialState(),actor,body);
+ const next=applyCommand(current.state||initialState(),financialActor(current.state,actor,body),body);
  const {data:ok,error:writeError}=await client.rpc('arena_compare_and_swap',{expected_revision:current.revision,next_state:next});if(writeError)throw new Error('Write failed');
  if(ok){if(action==='camera-frame'){const old=current.state.games.find(g=>g.id===body.payload.game)?.cameraFrames?.[actor.id]?.path;if(old)waitUntil(client.storage.from('arena-trust-private').remove([old]).then(()=>{}).catch(()=>{}));}waitUntil(processSandra(client).catch(()=>{}));if(next.settings.analysisEnabled)waitUntil(processAnalysis(client).catch(()=>{}));return res.status(200).json({state:publicState(next,actor.id,actor.admin),revision:current.revision+1,actor:actor?{id:actor.id,admin:actor.admin}:null});}
  const refreshed=await client.from('arena_state').select('state,revision').eq('id','main').single();if(refreshed.error)throw new Error('Refresh failed');current=refreshed.data;
@@ -69,4 +71,4 @@ export default async function handler(req,res){
  }catch(e){const status=e instanceof DomainError?e.status:500;return res.status(status).json({error:status===500?'Não foi possível concluir a operação. Tente novamente.':e.message});}
 }
 
-export async function processScheduledTournaments(client,now=Date.now()){for(let attempt=0;attempt<5;attempt++){const {data:row,error}=await client.from('arena_state').select('state,revision').eq('id','main').single();if(error||!row)return;const due=row.state.tournaments.filter(t=>t.economics==='fixed'&&t.status==='registration'&&t.startsAt<=now);let next=row.state;for(const t of due){try{next=applyCommand(next,{id:t.createdBy,admin:true},{id:'scheduled-start-'+t.id,type:'tournament_start',payload:{id:t.id}},now);}catch(error){if(!(error instanceof DomainError))throw error;}}if(next===row.state)return;const {data:ok,error:writeError}=await client.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:next});if(writeError)throw Error('Tournament write failed');if(ok)return;}}
+export {processScheduledTournaments} from '../server/tournament-scheduler.js';
