@@ -22,7 +22,7 @@ test('trophies have their own metallic 3D icon while menu navigation remains lig
 test('rating appears for both sides, including Casandra and estimated non-official computer difficulty',()=>{
  assert.match(app,/function playerRating/);
  assert.match(app,/bot\)<\/span>/);
- assert.match(app,/Computador <span class=\\"player-rating/);
+ assert.match(app,/Computador <span class="player-rating/);
  assert.match(app,/estimado\)\<\/span>/);
 });
 test('only local computer gets a deliberate ~230ms reaction, unlike instant online movement',()=>{
