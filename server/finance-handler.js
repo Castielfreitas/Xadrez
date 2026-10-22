@@ -8,7 +8,17 @@ import {financialActor} from './finance-access.js';
 import {identityPayload,putPrivate,privateImage,unseal,readPrivate,auditEvidenceAccess,cleanupTrust,setIdentityKey,trustConfigured} from './identity.js';
 const same=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length>=32&&a.length<=255&&Buffer.byteLength(a)===Buffer.byteLength(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export function allowedFinanceOrigin(origin){if(!origin)return true;try{const u=new URL(origin);return u.protocol==='https:'&&(u.hostname==='arena-xadrez.vercel.app'||/^arena-xadrez-[a-z0-9-]+-xadres\.vercel\.app$/.test(u.hostname))&&!u.port;}catch{return false;}}
-export async function loadFinanceConfig(db,baseEnv=process.env){const {data:c,error}=await db.rpc('arena_finance_config_read');if(error||!c)throw new DomainError('Configuração financeira indisponível.',503);setIdentityKey(c.kyc);return {config:c,env:{...baseEnv,ASAAS_API_KEY:baseEnv.ASAAS_API_KEY||c.asaas_key||'',ASAAS_ENVIRONMENT:c.environment,ASAAS_WEBHOOK_TOKEN:c.webhook,ASAAS_WALLET_ENABLED:String(c.wallet_enabled&&c.webhook_registered),ASAAS_GAMES_ENABLED:String(c.games_enabled),ASAAS_BUSINESS_MODEL_APPROVED:String(c.model_approved),ASAAS_PRODUCTION_ENABLED:String(c.production_enabled)}};}
+export async function loadFinanceConfig(db,baseEnv=process.env){const {data:c,error}=await db.rpc('arena_finance_config_read');if(error||!c)throw new DomainError('Configuração financeira indisponível.',503);setIdentityKey(c.kyc);
+ // Sandbox and production are isolated at the provider. Never carry the
+ // Sandbox webhook_registration=true flag into a new production environment.
+ if(c.environment==='production'){
+  const {data:row,error:stateError}=await db.from('arena_state').select('state').eq('id','main').single();
+  if(stateError||!row)throw new DomainError('Não foi possível confirmar o webhook produtivo.',503);
+  const productionHook=row.state?.cash?.production?.webhookSetup;
+  c.webhook_registered=Boolean(c.webhook_registered&&productionHook?.status==='registered'&&productionHook.id&&productionHook.id===c.webhook_id);
+  if(!c.webhook_registered)c.webhook_setup_status='pending_production_registration';
+ }
+ return {config:c,env:{...baseEnv,ASAAS_API_KEY:baseEnv.ASAAS_API_KEY||c.asaas_key||'',ASAAS_ENVIRONMENT:c.environment,ASAAS_WEBHOOK_TOKEN:c.webhook,ASAAS_WALLET_ENABLED:String(c.wallet_enabled&&c.webhook_registered),ASAAS_GAMES_ENABLED:String(c.games_enabled),ASAAS_BUSINESS_MODEL_APPROVED:String(c.model_approved),ASAAS_PRODUCTION_ENABLED:String(c.production_enabled)}};}
 // Read-only, admin-scoped go-live checklist. Never returns secrets, identity
 // documents or account balances and never enables a financial feature flag.
 export function productionReadiness(state,config,status,env,now=Date.now()){
