@@ -116,7 +116,30 @@ export async function registerAsaasWebhook(db,{env=process.env,provider=createAs
  const status=asaasReadiness(env);check(status.credentialsConfigured,'Configure a chave Asaas do ambiente selecionado.',503);
  const claim=await cashTransaction(db,state=>{const b=cashBook(state,status.environment);if(b.webhookSetup)return {claimed:false,...b.webhookSetup};b.webhookSetup={status:'creating',at:Date.now()};return {claimed:true};});
  const sync=async id=>{const {error}=await db.rpc('arena_finance_runtime_update',{patch:{webhook_registered:true,webhook_id:id,webhook_setup_status:'registered'}});check(!error,'Registro salvo; configuração em conciliação.',503);};
- if(!claim.result.claimed){if(claim.result.status==='registered'){await sync(claim.result.id);return {registered:true};}return {registered:false,pendingReview:true};}
+ if(!claim.result.claimed){
+  if(claim.result.status==='registered'){await sync(claim.result.id);return {registered:true};}
+  // An ambiguous provider POST is never repeated. Reconcile it using Asaas GET only.
+  if(claim.result.status==='uncertain'&&typeof provider.listWebhooks==='function'){
+   let listing;
+   try{listing=await provider.listWebhooks();}catch{return {registered:false,pendingReview:true};}
+   const required=['PAYMENT_RECEIVED','TRANSFER_DONE'];
+   const matches=Array.isArray(listing?.data)?listing.data.filter(item=>
+    typeof item.id==='string'&&item.id.length>0&&item.name==='Arena Xadrez '+status.environment&&
+    item.url===endpoint&&item.enabled===true&&item.interrupted!==true&&
+    Array.isArray(item.events)&&required.every(event=>item.events.includes(event))):[];
+   if(matches.length===1){
+    const id=matches[0].id;
+    await cashTransaction(db,state=>{
+     const entry=cashBook(state,status.environment).webhookSetup;
+     check(entry?.status==='uncertain'||entry?.status==='registered'&&entry.id===id,'Webhook em revisão.',409);
+     if(entry.status==='uncertain')state.cash[status.environment].webhookSetup={status:'registered',id,at:Date.now()};
+    });
+    await sync(id);
+    return {registered:true,recovered:true};
+   }
+  }
+  return {registered:false,pendingReview:true};
+ }
  try{const response=await provider.createWebhook({url:endpoint,email});check(typeof response.id==='string','Resposta inconclusiva.',502);await cashTransaction(db,state=>{cashBook(state,status.environment).webhookSetup={status:'registered',id:response.id,at:Date.now()};});await sync(response.id);return {registered:true};}
  catch(error){await cashTransaction(db,state=>{const op=cashBook(state,status.environment).webhookSetup;if(op?.status==='creating')op.status='uncertain';});await db.rpc('arena_finance_runtime_update',{patch:{webhook_setup_status:'uncertain'}});throw error;}
 }
