@@ -59,6 +59,7 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
    return request('/payments',{customer,billingType:'CREDIT_CARD',value:cents(amountCents),dueDate:date(dueDate),externalReference:reference(externalReference),description:'Recarga de saldo Arena Xadrez',interest:{value:0},fine:{value:0}});
   },
   getPayment(id){return request('/payments/'+resource(id,'pay_'));},
+  listPaymentRefunds(id){return request('/payments/'+resource(id,'pay_')+'/refunds');},
   getPixQrCode(id){return request('/payments/'+resource(id,'pay_')+'/pixQrCode');},
   findPayments(externalReference){return request('/payments?externalReference='+reference(externalReference));},
   createPixTransfer({amountCents,verifiedCpf,pixCpf,externalReference}){
