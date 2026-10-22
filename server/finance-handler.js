@@ -94,7 +94,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
     }catch(e){if(paths.length)await db.storage.from('arena-trust-private').remove(paths);throw e;}
    }
    if(JSON.stringify(body).length>6000)throw new DomainError('Solicitação inválida.');
-   if(action==='wallet-deposit')return json({operation:await createDeposit(db,actor,body,{env,provider})});
+   if(action==='wallet-deposit'){if(env.ASAAS_ENVIRONMENT==='sandbox'){const {data:pilot,error:pilotError}=await db.from('arena_pilot_accounts').select('max_deposit_cents,scope').eq('user_id',actor.id).maybeSingle();if(pilotError||!pilot||pilot.scope!=='sandbox')throw new DomainError('Piloto restrito às contas autorizadas.',403);if(!Number.isSafeInteger(body?.amountCents)||body.amountCents<1||body.amountCents>pilot.max_deposit_cents)throw new DomainError('Limite de recarga no piloto: R$ 1,00.',403);}return json({operation:await createDeposit(db,actor,body,{env,provider})});}
    if(action==='wallet-withdraw')return json({operation:await createWithdrawal(db,actor,body,{env})});
    if(action==='wallet-withdraw-decision')return json({operation:await decideWithdrawal(db,actor,body,{env,provider})});
    if(action==='wallet-platform-transfer')return json(await claimPlatformRevenue(db,actor,body,{env}));

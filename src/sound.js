@@ -24,21 +24,19 @@ function materialNoise(ctx,duration,generate,peak){
  source.buffer=buffer;gain.gain.setValueAtTime(Math.max(0,Math.min(1,peak)),at);
  source.connect(gain);gain.connect(master);source.start(at);source.stop(at+duration);
 }
-// A single, continuous rough collapse (stone/wood splintering) instead of
-// several high-pitched clicks. Use broad rumble and granular debris.
+// Slow granular collapse: stones and wood break into many particles.
+// No sharp impulse, sine kick or click resembling a gunshot.
 function crumble(ctx){
- const duration=.49;
+ const duration=.74;
  materialNoise(ctx,duration,(t,white,grain,low)=>{
-  const initial=Math.min(1,t/.014)*Math.exp(-t/0.25);
-  const buckle=(t>.075&&t<.31)?0.8:0.45;
-  const debris=Math.exp(-Math.max(0,t-.22)/.13)*Math.min(1,t/.035);
-  const rumble=Math.sin(2*Math.PI*(82-40*t)*t)*Math.exp(-t/.16);
-  return (low*.95+grain*.36+white*.10)*initial*buckle
-       +grain*.36*debris*Math.max(0,1-t/.49)
-       +rumble*.24*Math.exp(-t/.22);
- },.97);
- tone(ctx,90,.10,.17,0,'sine');
- tone(ctx,67,.075,.23,.035,'sine');
+  const attack=Math.min(1,t/.07);
+  const rolling=Math.exp(-t/.47);
+  const crumbleBed=(low*.84+grain*.42+white*.18)*attack*rolling;
+  const grains=(.22+.28*Math.sin(2*Math.PI*11*t)**2)*grain*
+   Math.min(1,t/.12)*Math.exp(-Math.max(0,t-.13)/.31);
+  const dust=low*.31*Math.min(1,t/.24)*Math.exp(-Math.max(0,t-.28)/.25);
+  return (crumbleBed+grains+dust)*.89;
+ },.96);
 }
 // Short continuous wooden drag with a soft settling scrape, never a tap.
 function slide(ctx){

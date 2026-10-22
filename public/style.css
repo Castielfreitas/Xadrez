@@ -279,3 +279,40 @@ header,.breadcrumb,.header-right{font-size:14px}
 }
 /* Capture debris continues to be visible; only the moving chess pieces snap. */
 .capture-shard{animation-duration:380ms!important}
+
+
+/* Premium hero: dimensional graphite/gold chess set, using the actual in-site 3D piece textures */
+.hero{background:radial-gradient(ellipse at 72% 30%,#494032 0%,#302a28 28%,#17191b 72%),linear-gradient(120deg,#121316,#29231c);border-color:#765a34;box-shadow:inset 0 1px 0 #ead39b30,0 16px 48px #0005;isolation:isolate}
+.hero:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 43%,#efc97b0d 65%,transparent 90%)}
+.hero-copy{position:relative;z-index:5;padding:clamp(24px,3vw,42px)}
+.hero h1{font-size:clamp(34px,3.6vw,53px);line-height:1.08;letter-spacing:-1.2px}
+.hero em{color:#f7ca74;text-shadow:0 1px 0 #ae7a36}
+.hero p{font-size:clamp(14px,1.25vw,17px);color:#d3c5af;max-width:37ch}
+.hero-art{perspective:950px;min-height:360px;overflow:visible;flex:0 0 45%}
+.hero-board-scene{position:relative;display:grid;place-items:center;width:100%;height:100%;min-height:350px;perspective:940px;filter:drop-shadow(0 29px 19px #0009)}
+.hero-board-3d{position:relative;width:clamp(230px,25vw,360px);aspect-ratio:1;transform-style:preserve-3d;transform:rotateX(32deg) rotateZ(-21deg) rotateY(0deg);border:9px solid #a7814f;border-bottom:14px solid #765327;border-right:13px solid #6f4c24;border-radius:8px;box-shadow:inset 0 0 0 2px #f3d3968c,0 3px 0 #34281b,8px 14px 0 #282019,18px 34px 35px #0009}
+.hero-board-3d:after{content:"";position:absolute;inset:-12px;pointer-events:none;border:3px solid #f6e0a55c;border-radius:9px;box-shadow:inset 0 0 10px #19160e5c}
+.hero-board-3d .hero-board{width:100%!important;height:100%!important;transform:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#c6ae80;overflow:hidden}
+.hero-board .mini-square.light{background:linear-gradient(145deg,#f5e4bb,#d7bd86)}
+.hero-board .mini-square.dark{background:linear-gradient(140deg,#85613b,#62482e)}
+.hero-board .piece{display:block;width:100%;height:100%;position:relative;font-size:0!important;filter:drop-shadow(2px 6px 3px #0008)}
+.hero-board .piece .piece-real{display:block;position:absolute;inset:2% 0 0 0;background-repeat:no-repeat;filter:drop-shadow(1px 3px 2px #100c08ba)}
+.hero-board .piece .chess-piece-svg{display:none}
+.hero-art .floating-tag{z-index:4;right:2%;bottom:5%;background:linear-gradient(130deg,#292520f2,#151516f5);border:1px solid #b48a50;border-radius:10px;color:#f4cc82;box-shadow:0 12px 28px #0009,inset 0 1px 0 #f6d89d29}
+.hero .hero-note{color:#d9c29c}
+svg.arena-trophy-3d{color:#e0b25f;overflow:visible;filter:drop-shadow(-1px -1px 0 #fff5d133) drop-shadow(1px 3px 1px #38220c) drop-shadow(2px 5px 3px #0008)!important}
+.sidebar svg.arena-trophy-3d{height:25px;width:25px}
+.tournament-card svg.arena-trophy-3d,.tournament-detail-panel svg.arena-trophy-3d,.badge svg.arena-trophy-3d{width:24px;height:24px}
+.board-player b{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:clamp(13px,1.3vw,16px);min-width:0}
+.board-player .player-rating{display:inline-flex;align-items:center;font-size:13px;color:#f0d29a;padding:3px 7px;border:1px solid #6c563b;border-radius:6px;font-variant-numeric:tabular-nums;background:#332b22;white-space:nowrap}
+@media(max-width:890px){
+ .hero{flex-wrap:wrap}.hero-copy{flex:1 1 100%}.hero-art{flex:1 1 100%;min-height:300px}
+ .hero-board-scene{min-height:310px}.hero-board-3d{width:min(68vw,290px)}
+ .hero-art .floating-tag{right:12%;bottom:0}.hero h1{font-size:clamp(32px,6vw,45px)}
+}
+@media(max-width:500px){
+ .hero-board-3d{width:min(68vw,254px)}.hero-board-scene{min-height:260px}
+ .hero-art{min-height:260px}.hero-art .floating-tag{right:2%;bottom:0;padding:9px 11px;font-size:17px}
+ .hero-copy{padding:23px}.hero-actions{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){.hero-board-3d{animation:none!important}}
