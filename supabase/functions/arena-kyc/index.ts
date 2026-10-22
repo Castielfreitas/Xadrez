@@ -73,7 +73,7 @@ async function syncVerified(db,row,decision){
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')||'';
  if(origin&&!corsOrigin(origin))return json({error:'Origem não autorizada.'},403);
- if(req.method==='OPTIONS')return json({},204,origin);
+ if(req.method==='OPTIONS')return new Response(null,{status:204,headers:{'Vary':'Origin','Access-Control-Allow-Origin':origin||'https://arena-xadrez.vercel.app','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}});
  try{
   const url=new URL(req.url),action=url.searchParams.get('action')||'health';
   if(action==='health')return json({service:'arena-kyc',environment:env(),configured:configured()},200,origin);
