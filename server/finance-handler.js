@@ -20,6 +20,27 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    const url=new URL(request.url),action=url.searchParams.get('action')||'health';
    const {config,env}=await load(db),status=paymentsStatus(env),provider=providerFactory(env);
    if(request.method==='GET'&&action==='health')return json({service:'arena-finance',version:1,trustConfigured:trustConfigured(),paymentsEnabled:status.paymentsEnabled,gamesEnabled:status.paymentsEnabled&&env.ASAAS_GAMES_ENABLED==='true',environment:status.environment});
+   // Worker-authenticated read-only Sandbox diagnostic. No secret values or balances are returned.
+   if(request.method==='GET'&&action==='sandbox-diagnostics'){
+    if(!same(request.headers.get('x-arena-worker-token'),config.worker))throw new DomainError('Acesso não autorizado.',401);
+    if(env.ASAAS_ENVIRONMENT!=='sandbox')throw new DomainError('Diagnóstico permitido somente no Sandbox.',403);
+    const keyFormatValid=env.ASAAS_API_KEY?.startsWith('$aact_hmlg_')===true;
+    if(!keyFormatValid||!status.credentialsConfigured)return json({environment:'sandbox',keyFormatValid,providerConnected:false,webhooksReadable:false,reason:'credentials_not_ready'});
+    let providerConnected=false,webhooksReadable=false,webhookCandidates=0,activeCandidates=0,listingIncomplete=false;
+    try{const balance=await provider.getBalance();providerConnected=Number.isFinite(balance?.balance);}catch{}
+    try{
+     const listing=await provider.listWebhooks();
+     if(Array.isArray(listing?.data)){
+      webhooksReadable=true;listingIncomplete=Boolean(listing.hasMore);
+      const endpoint=url.origin+url.pathname+'?action=asaas-webhook';
+      const matches=listing.data.filter(h=>h.url===endpoint);
+      webhookCandidates=matches.length;
+      activeCandidates=matches.filter(h=>h.enabled===true&&h.interrupted!==true).length;
+     }
+    }catch{}
+    return json({environment:'sandbox',keyFormatValid,providerConnected,webhooksReadable,webhookCandidates,activeCandidates,listingIncomplete});
+   }
+
    if(!['GET','POST'].includes(request.method))return json({error:'Método não permitido.'},405);
    const maxBody=action==='identity-submit'?2500000:action==='asaas-webhook'?131072:12000;let body={};if(request.method==='POST'){if(Number(request.headers.get('content-length'))>maxBody)throw new DomainError('Envio muito grande.',413);const raw=await request.text();if(raw.length>maxBody)throw new DomainError('Envio muito grande.',413);try{body=JSON.parse(raw||'{}');}catch{throw new DomainError('JSON inválido.');}}
    if(action==='asaas-webhook'){
