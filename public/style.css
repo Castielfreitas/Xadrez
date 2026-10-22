@@ -316,3 +316,53 @@ svg.arena-trophy-3d{color:#e0b25f;overflow:visible;filter:drop-shadow(-1px -1px 
  .hero-copy{padding:23px}.hero-actions{flex-wrap:wrap}
 }
 @media(prefers-reduced-motion:reduce){.hero-board-3d{animation:none!important}}
+
+
+/* Hero v4 — tangible hand-made chess table, warm graphite and brushed brass. */
+.hero-board-scene{filter:drop-shadow(2px 33px 22px #000b);perspective:1150px}
+.hero-board-3d{transform:rotateX(40deg) rotateZ(-23deg);transform-origin:50% 50%;border:12px ridge #b99156;border-right:18px solid #765022;border-bottom:22px solid #5d3a1b;box-shadow:inset 0 0 0 3px #fff0c199,inset 0 0 10px #23160d,0 6px 0 #4f371f,0 14px 0 #271b10,18px 30px 4px #0008,30px 52px 40px #000c}
+.hero-board-3d::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(122deg,#fff8d925 3%,transparent 24%,#00000017 75%,#130b0740);mix-blend-mode:soft-light}
+.hero-board .mini-square.light{background:repeating-linear-gradient(13deg,#fff6d807 0 4px,#64452105 5px 9px),linear-gradient(142deg,#f5e6c3,#d1b780)}
+.hero-board .mini-square.dark{background:repeating-linear-gradient(5deg,#f2bd6410 0 3px,#26130b17 4px 7px),linear-gradient(125deg,#94683d,#56371e)}
+.hero-board .piece{transform:translateY(-5%) scale(1.19);filter:drop-shadow(2px 6px 3px #100a05ca)}
+.hero-board .piece-real{filter:brightness(1.1) contrast(1.09) drop-shadow(3px 7px 3px #120d07c9)!important}
+.hero-art .floating-tag{border-color:#b99559;background:linear-gradient(145deg,#4a3929ed,#1b1a19f5);box-shadow:inset 0 1px 1px #fff6dc2a,2px 15px 26px #000b}
+.hero-knight-3d,.practice-knight{position:relative;display:inline-block;flex:0 0 auto;width:52px;height:60px;color:#efd6a7;filter:drop-shadow(2px 6px 3px #000b)}
+.hero-knight-3d .piece-real,.practice-knight .piece-real{display:block!important;position:absolute;inset:0;background-repeat:no-repeat!important;filter:brightness(1.17) contrast(1.06) drop-shadow(1px 3px 2px #0009)}
+.hero-knight-3d .chess-piece-svg,.practice-knight .chess-piece-svg{display:none!important}
+.practice-knight{width:42px;height:48px}
+.practice-card{align-items:center}.practice-card b{font-size:15px}.practice-card small{font-size:12px}
+@media(max-width:700px){.hero-board-3d{border-right-width:12px;border-bottom-width:15px}.hero-knight-3d{width:42px;height:48px}}
+
+/* Captured pieces must crumble in *every* game mode.
+   Specificity intentionally beats the global "instant moving pieces" rule. */
+.board .capture-effect{z-index:40;overflow:visible;isolation:isolate;transform:translateZ(0);pointer-events:none}
+.board .capture-effect .piece.capture-shard{
+ animation:arena-debris-fall 1050ms cubic-bezier(.17,.66,.54,1) var(--shard-delay,0ms) both!important;
+ transition:none!important;
+ inset:0!important;width:100%!important;height:100%!important;overflow:visible!important;
+ will-change:transform,opacity;
+}
+.board .capture-effect .piece.capture-shard .piece-real{animation:none!important;filter:brightness(1.05) drop-shadow(1px 4px 2px #16110ab0)!important}
+@keyframes arena-debris-fall{
+ 0%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+ 9%{opacity:1;transform:translate(0,-8%) scale(1.01) rotate(0deg)}
+ 32%{opacity:.94;transform:translate(calc(var(--fall-x) * .38),calc(var(--fall-y) * .28)) scale(.92) rotate(calc(var(--fall-turn) * .35))}
+ 78%{opacity:.57;transform:translate(calc(var(--fall-x) * .85),calc(var(--fall-y) * .83)) scale(.61) rotate(calc(var(--fall-turn) * .85))}
+ 100%{opacity:0;transform:translate(var(--fall-x),var(--fall-y)) scale(.24) rotate(var(--fall-turn))}
+}
+/* Mineral dust cloud rather than red muzzle-flash or a gunshot splash. */
+.board .capture-effect .capture-splash{
+ position:absolute;inset:-12%;background:radial-gradient(ellipse at center,#dfcaa69c 0 10%,#a98d6680 22%,#594f4240 37%,transparent 66%),radial-gradient(circle at 68% 35%,#f2d4a047,transparent 47%);
+ opacity:0;animation:arena-stone-dust 1020ms ease-out 85ms both!important;mix-blend-mode:screen;pointer-events:none
+}
+@keyframes arena-stone-dust{
+ 0%{opacity:0;transform:scale(.3) translateY(4%)}
+ 23%{opacity:.67;transform:scale(.95) translateY(-8%)}
+ 70%{opacity:.30;transform:scale(1.42) translateY(-15%)}
+ 100%{opacity:0;transform:scale(1.76) translateY(-24%)}
+}
+@media(prefers-reduced-motion:reduce){
+ .board .capture-effect:not(.force-motion) .piece.capture-shard,
+ .board .capture-effect:not(.force-motion) .capture-splash{animation:none!important;display:none}
+}

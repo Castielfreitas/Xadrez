@@ -30,8 +30,8 @@ test('only local computer gets a deliberate ~230ms reaction, unlike instant onli
  assert.match(app,/pendingVisualMove=\{id:game\.id,baseFen:game\.fen,ply,game:predicted\}/);
 });
 test('capture has extended rolling collapse without simulated gunshot/kick notes',()=>{
- assert.match(sound,/const duration=\.74/);
- assert.match(sound,/const attack=Math\.min\(1,t\/\.07\)/);
+ assert.match(sound,/const duration=1\.28/);
+ assert.match(sound,/const rise=Math\.min\(1,t\/\.115\)/);
  assert.doesNotMatch(sound,/tone\(ctx,90/);
  assert.doesNotMatch(sound,/tone\(ctx,67/);
 });
