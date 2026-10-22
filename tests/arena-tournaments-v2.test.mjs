@@ -9,6 +9,7 @@ test('viability calculates correct BRL projection for 1000 players at R$ 3.05 wi
  assert.equal(x.expectedMargin,304000);
  assert.equal(x.minimumStart,4);
  assert.equal(x.minimumPositiveMargin,4);
+ assert.equal(x.minimumPositiveMarginCents,220); // 4 × R$3,05 − R$10,00 = R$2,20.
  assert.equal(x.possible,true);
 });
 test('nonprofitable capacity cannot be announced as viable',()=>{
@@ -35,4 +36,12 @@ test('profile country becomes visible without exposing private balances',()=>{
  assert.equal(publicState(s,'spectator').players.p.country,'BR');
  assert.equal(publicState(s,'spectator').players.p.available,undefined);
  assert.throws(()=>applyCommand(s,a,{id:'f0000000-0000-4000-8000-000000000005',type:'profile_update',payload:{country:'Brasil'}},now));
+});
+
+test('a full 2-player R$1.00 tournament shows R$1.00 first positive gross margin',()=>{
+ const projection=tournamentViability({capacity:2,entry:100,fixedPrize:100,economics:'fixed'});
+ assert.equal(projection.minimumStart,2);
+ assert.equal(projection.minimumPositiveMarginCents,100);
+ assert.equal(projection.expectedMargin,100);
+ assert.equal(tournamentViability({capacity:2,entry:100,fixedPrize:200,economics:'fixed'}).minimumPositiveMarginCents,null);
 });

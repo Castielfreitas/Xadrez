@@ -16,5 +16,6 @@ export function tournamentViability({capacity,entry,fixedPrize=0,economics='fixe
  const possible=required<=places;
  const expectedReceipts=perPlayer*places;
  const expectedMargin=expectedReceipts-prize;
- return {minimumStart:possible?minimumStart:null,minimumPositiveMargin:possible?minimumStart:null,remainingToStart:possible?Math.max(0,minimumStart):null,capacity:places,expectedReceipts,expectedMargin,possible};
+ const minimumPositiveMarginCents=possible?minimumStart*perPlayer-prize:null;
+ return {minimumStart:possible?minimumStart:null,minimumPositiveMargin:possible?minimumStart:null,minimumPositiveMarginCents,remainingToStart:possible?Math.max(0,minimumStart):null,capacity:places,expectedReceipts,expectedMargin,possible};
 }
