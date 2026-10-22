@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {initialState} from '../src/domain.js';
 import {cashBook,cashAccount,beginDeposit,bindCustomer,bindPayment,settleDeposit} from '../server/cash-ledger.js';
-import {productionReadiness} from '../server/finance-handler.js';
+import {productionReadiness,loadFinanceConfig} from '../server/finance-handler.js';
 
 test('checkmate modal reuses actual photoreal 3D king sprite, not unicode chess symbols',()=>{
  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
@@ -74,4 +74,14 @@ test('readiness blocks production activation without model approval, prod token,
  assert.equal(check.ready,true);
  assert.equal(check.verifiedPilotPlayers,2);
  assert.equal(check.financialOperationsEnabled,false);
+});
+
+test('production cannot inherit a Sandbox webhook registration or enable wallet',async()=>{
+ const c={kyc:'ab'.repeat(32),environment:'production',webhook_registered:true,webhook_id:'wh_sandbox_only',webhook_setup_status:'registered',webhook:'w'.repeat(64),wallet_enabled:true,games_enabled:true,model_approved:true,production_enabled:true};
+ const db={rpc:async()=>({data:{...c}}),from:()=>({select:()=>({eq:()=>({single:async()=>({data:{state:{cash:{sandbox:{webhookSetup:{status:'registered',id:'wh_sandbox_only'}}}}}}})})})})};
+ const {config,env}=await loadFinanceConfig(db,{ASAAS_API_KEY:'$aact_prod_fixture'});
+ assert.equal(config.webhook_registered,false);
+ assert.equal(config.webhook_setup_status,'pending_production_registration');
+ assert.equal(env.ASAAS_WALLET_ENABLED,'false');
+ assert.equal(env.ASAAS_GAMES_ENABLED,'true'); // games remain separately gated by paymentsEnabled.
 });
