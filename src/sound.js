@@ -22,21 +22,28 @@ function materialNoise(ctx,duration,generate,peak){
  }
  const source=ctx.createBufferSource(),gain=ctx.createGain();
  source.buffer=buffer;gain.gain.setValueAtTime(Math.max(0,Math.min(1,peak)),at);
- source.connect(gain);gain.connect(master);source.start(at);source.stop(at+duration);
+ // Remove sharp high-frequency impulses; real rubble has a dark, rolling texture.
+ const filter=ctx.createBiquadFilter?.();
+ if(filter){filter.type='lowpass';filter.frequency.setValueAtTime(690,at);filter.Q?.setValueAtTime?.(.55,at);source.connect(filter);filter.connect(gain);}
+ else source.connect(gain);
+ gain.connect(master);source.start(at);source.stop(at+duration);
 }
 // Slow granular collapse: stones and wood break into many particles.
 // No sharp impulse, sine kick or click resembling a gunshot.
 function crumble(ctx){
- const duration=.74;
+ const duration=1.28;
  materialNoise(ctx,duration,(t,white,grain,low)=>{
-  const attack=Math.min(1,t/.07);
-  const rolling=Math.exp(-t/.47);
-  const crumbleBed=(low*.84+grain*.42+white*.18)*attack*rolling;
-  const grains=(.22+.28*Math.sin(2*Math.PI*11*t)**2)*grain*
-   Math.min(1,t/.12)*Math.exp(-Math.max(0,t-.13)/.31);
-  const dust=low*.31*Math.min(1,t/.24)*Math.exp(-Math.max(0,t-.28)/.25);
-  return (crumbleBed+grains+dust)*.89;
- },.96);
+  // A slow first crumble swells into rolling stone debris, never an abrupt "bang".
+  const rise=Math.min(1,t/.115);
+  const roll=Math.exp(-t/.61);
+  const earth=(low*1.65+grain*.17)*rise*roll;
+  const waves=[.17,.38,.65,.88].reduce((sum,c,i)=>
+    sum+Math.exp(-Math.pow((t-c)/(.14+i*.015),2))*(.22-i*.035),0);
+  const heavy=(Math.sin(2*Math.PI*49*t)+Math.sin(2*Math.PI*71*t)*.44)*.065*rise*Math.exp(-t/.58);
+  const gravel=(grain*.28+low*.24)*waves;
+  const dust=low*.35*Math.min(1,t/.32)*Math.exp(-Math.max(0,t-.45)/.39);
+  return (earth+gravel+dust+heavy)*.92;
+ },.98);
 }
 // Short continuous wooden drag with a soft settling scrape, never a tap.
 function slide(ctx){
