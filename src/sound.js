@@ -40,7 +40,7 @@ function crumble(ctx){
   const waves=[.17,.38,.65,.88].reduce((sum,c,i)=>
     sum+Math.exp(-Math.pow((t-c)/(.14+i*.015),2))*(.22-i*.035),0);
   const heavy=(Math.sin(2*Math.PI*49*t)+Math.sin(2*Math.PI*71*t)*.44)*.065*rise*Math.exp(-t/.58);
-  const gravel=(grain*.28+low*.24)*waves;
+  const gravel=(grain*.28+low*.24)*waves*rise;
   const dust=low*.35*Math.min(1,t/.32)*Math.exp(-Math.max(0,t-.45)/.39);
   return (earth+gravel+dust+heavy)*.92;
  },.98);
