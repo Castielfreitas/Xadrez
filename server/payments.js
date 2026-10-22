@@ -99,7 +99,7 @@ export async function reconcileWallet(db,{env=process.env,provider=createAsaasCl
  for(const {kind,op} of jobs){try{
   let resource;
   if(kind==='deposit'){
-   if(op.paymentId)resource=await provider.getPayment(op.paymentId);
+   if(op.paymentId){resource=await provider.getPayment(op.paymentId);if(['credited','review'].includes(op.status)&&provider.listPaymentRefunds){const refunds=await provider.listPaymentRefunds(op.paymentId);check(Array.isArray(refunds?.data),'Estornos indisponíveis para conciliação.',502);resource={...resource,refunds:refunds.data};}}
    else if(op.customerId){const matches=await provider.findPayments(op.id);check(Array.isArray(matches.data)&&matches.data.length<=1,'Cobranças duplicadas exigem revisão.',409);resource=matches.data[0];}
   }else if(op.transferId)resource=await provider.getTransfer(op.transferId);
   else if(provider.findTransfers){const matches=await provider.findTransfers(op.id,op.createdAt);check(Array.isArray(matches.data)&&matches.data.length<=1,'Transferências duplicadas exigem revisão.',409);resource=matches.data[0];}
