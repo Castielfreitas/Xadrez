@@ -19,3 +19,73 @@ test('ambiguous charge is recovered by GET/reference without retrying creation',
 test('administrative revenue excludes provider costs and can only be claimed once into a verified wallet',async()=>{const {seal}=await import('../server/identity.js');const s=initialState();s.players.a={id:'a',status:'active'};s.identities={a:{status:'verified',submittedAt:Date.now(),sealed:seal(JSON.stringify({cpf:'52998224725',name:'Pessoa Teste'})).toString('base64')}};const b=cashBook(s,'sandbox');b.platform={available:1000,claimed:0,ledger:[]};b.processingFees=300;const db=database(s),actor={id:'a',admin:true},input={id,amountCents:600};await claimPlatformRevenue(db,actor,input,{env});assert.equal(db.state.cash.sandbox.platform.available,100);assert.equal(db.state.cash.sandbox.accounts.a.available,600);assert.equal(db.state.cash.sandbox.platform.costsCovered,300);await claimPlatformRevenue(db,actor,input,{env});assert.equal(db.state.cash.sandbox.accounts.a.available,600);await assert.rejects(()=>claimPlatformRevenue(db,actor,{...input,amountCents:500},{env}));await assert.rejects(()=>claimPlatformRevenue(db,{id:'a',admin:false},input,{env}));});
 test('webhook provisioning claims its operation once and never repeats an ambiguous provider POST',async()=>{const {registerAsaasWebhook}=await import('../server/payments.js');const db=database();let calls=0;const options={env,endpoint:'https://fixture.supabase.co/functions/v1/arena-finance?action=asaas-webhook',email:'admin@example.org',provider:{createWebhook:async()=>{calls++;throw Error('timeout');}}};await assert.rejects(()=>registerAsaasWebhook(db,options));const second=await registerAsaasWebhook(db,options);assert.equal(calls,1);assert(second.pendingReview);assert.equal(db.state.cash.sandbox.webhookSetup.status,'uncertain');});
 test('webhook provisioning records the provider ID and metadata retries do not duplicate it',async()=>{const {registerAsaasWebhook}=await import('../server/payments.js');const db=database();let calls=0;const options={env,endpoint:'https://fixture.supabase.co/functions/v1/arena-finance?action=asaas-webhook',email:'admin@example.org',provider:{createWebhook:async()=>{calls++;return {id:'hook_fixture'};}}};assert((await registerAsaasWebhook(db,options)).registered);assert((await registerAsaasWebhook(db,options)).registered);assert.equal(calls,1);assert.equal(db.state.cash.sandbox.webhookSetup.id,'hook_fixture');});
+
+
+test('uncertain Asaas webhook is recovered by read-only listing without another POST',async()=>{
+ const {registerAsaasWebhook}=await import('../server/payments.js');
+ const s=initialState();cashBook(s,'sandbox').webhookSetup={status:'uncertain',at:Date.now()};
+ const db=database(s);let reads=0,posts=0;
+ const endpoint='https://fixture.supabase.co/functions/v1/arena-finance?action=asaas-webhook';
+ const r=await registerAsaasWebhook(db,{env,endpoint,email:'admin@example.org',provider:{
+  listWebhooks:async()=>{reads++;return {data:[{id:'wh_match',name:'Arena Xadrez sandbox',url:endpoint,enabled:true,interrupted:false,events:['PAYMENT_RECEIVED','TRANSFER_DONE']}]};},
+  createWebhook:async()=>{posts++;throw Error('must not repeat');}
+ }});
+ assert.equal(r.registered,true);assert.equal(r.recovered,true);assert.equal(reads,1);assert.equal(posts,0);
+ assert.equal(db.state.cash.sandbox.webhookSetup.status,'registered');
+ assert.equal(db.state.cash.sandbox.webhookSetup.id,'wh_match');
+});
+test('uncertain webhook with duplicates or unverifiable token configuration remains blocked',async()=>{
+ const {registerAsaasWebhook}=await import('../server/payments.js');
+ const endpoint='https://fixture.supabase.co/functions/v1/arena-finance?action=asaas-webhook';
+ for(const candidates of [[{id:'wh_one',name:'Arena Xadrez sandbox',url:endpoint,enabled:true,events:['PAYMENT_RECEIVED','TRANSFER_DONE']},{id:'wh_two',name:'Arena Xadrez sandbox',url:endpoint,enabled:true,events:['PAYMENT_RECEIVED','TRANSFER_DONE']}],[{id:'wh_unverified',name:'Arena Xadrez sandbox',url:endpoint,enabled:true,events:[]}],[]]){
+  const s=initialState();cashBook(s,'sandbox').webhookSetup={status:'uncertain',at:Date.now()};
+  const db=database(s);let posts=0;
+  const r=await registerAsaasWebhook(db,{env,endpoint,email:'admin@example.org',provider:{listWebhooks:async()=>({data:candidates}),createWebhook:async()=>{posts++;}}});
+  assert.equal(r.registered,false);assert.equal(r.pendingReview,true);assert.equal(posts,0);
+  assert.equal(db.state.cash.sandbox.webhookSetup.status,'uncertain');
+ }
+});
+
+
+test('Asaas webhook URL uses the configured Supabase project, not the incoming request host',async()=>{
+ const {financeWebhookEndpoint}=await import('../server/finance-handler.js');
+ assert.equal(financeWebhookEndpoint({SUPABASE_URL:'https://kjqovtvhgulwufdzfmif.supabase.co'}),'https://kjqovtvhgulwufdzfmif.supabase.co/functions/v1/arena-finance?action=asaas-webhook');
+ for(const bad of ['http://kjqovtvhgulwufdzfmif.supabase.co','https://evil.test','https://kjqovtvhgulwufdzfmif.supabase.co.evil.test']){
+  assert.throws(()=>financeWebhookEndpoint({SUPABASE_URL:bad}));
+ }
+});
+
+
+test('credited Sandbox deposit is polled for completed refunds and debited exactly once',async()=>{
+ const s=initialState();s.players.a={status:'active'};const ref='d0000000-0000-4000-8000-000000000999';
+ beginDeposit(s,'sandbox','a',ref,2000,1,'PIX');bindCustomer(s,'sandbox',ref,'cus_test');bindPayment(s,'sandbox',ref,'pay_test');
+ const db=database(s);let calls=0;
+ const provider={getPayment:async()=>{calls++;return {id:'pay_test',externalReference:ref,customer:'cus_test',billingType:'PIX',value:20,netValue:19,status:'RECEIVED',refunds:calls>=2?[{status:'DONE',value:20}]:[]}}};
+ await reconcileWallet(db,{env,provider,now:100000});
+ assert.equal(db.state.cash.sandbox.accounts.a.available,2000);
+ await reconcileWallet(db,{env,provider,now:100100});
+ assert.equal(calls,1);
+ const result=await reconcileWallet(db,{env,provider,now:3700000});
+ assert.equal(result.checked,1);
+ assert.equal(db.state.cash.sandbox.accounts.a.available,0);
+ assert.equal(db.state.cash.sandbox.deposits[ref].status,'refunded');
+ assert.equal(db.state.cash.sandbox.deposits[ref].reversed,true);
+ await reconcileWallet(db,{env,provider,now:7400000});
+ assert.equal(calls,2);
+ assert.equal(db.state.cash.sandbox.ledger.filter(v=>v.type==='deposit_refund').length,1);
+});
+
+
+test('reconciliation confirms a refunded payment using the Asaas refunds listing',async()=>{
+ const s=initialState(),ref='d0000000-0000-4000-8000-000000000998';
+ beginDeposit(s,'sandbox','a',ref,1000,1,'PIX');bindCustomer(s,'sandbox',ref,'cus_test');bindPayment(s,'sandbox',ref,'pay_test');
+ const db=database(s);
+ const provider={getPayment:async()=>({id:'pay_test',externalReference:ref,customer:'cus_test',billingType:'PIX',value:10,netValue:9.01,status:'RECEIVED'}),listPaymentRefunds:async()=>({data:[{status:'CANCELLED',value:10},{status:'DONE',value:10}]})};
+ await reconcileWallet(db,{env,provider,now:100000});
+ assert.equal(db.state.cash.sandbox.accounts.a.available,1000);
+ const r=await reconcileWallet(db,{env,provider,now:3700000});
+ assert.equal(r.checked,1);assert.equal(r.errors,0);
+ assert.equal(db.state.cash.sandbox.accounts.a.available,0);
+ assert.equal(db.state.cash.sandbox.deposits[ref].reversed,true);
+ assert.equal(db.state.cash.sandbox.ledger.filter(v=>v.type==='deposit_refund').length,1);
+});

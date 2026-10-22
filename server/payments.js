@@ -94,16 +94,16 @@ export async function reconcileWallet(db,{env=process.env,provider=createAsaasCl
  const environment=asaasReadiness(env).environment;check(environment,'Ambiente financeiro não configurado.',503);
  await processPaymentEvents(db,{env,provider,now});
  const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();check(!error&&row,'Conciliação indisponível.',503);
- const b=cashBook(row.state,environment),jobs=[...Object.values(b.deposits).filter(d=>['creating','pending','uncertain'].includes(d.status)).map(d=>({kind:'deposit',op:d})),...Object.values(b.withdrawals).filter(w=>['submitting','pending','uncertain'].includes(w.status)).map(w=>({kind:'withdrawal',op:w}))].filter(j=>!j.op.nextReconcileAt||j.op.nextReconcileAt<=now).sort((a,b)=>(a.op.lastReconciledAt||0)-(b.op.lastReconciledAt||0)).slice(0,limit);
+ const b=cashBook(row.state,environment),needsFollowup=d=>['credited','review'].includes(d.status)&&!d.reversed&&Boolean(d.paymentId)&&Number.isFinite(d.receivedAt)&&d.receivedAt<=now&&now-d.receivedAt<=180*86400000,jobs=[...Object.values(b.deposits).filter(d=>['creating','pending','uncertain'].includes(d.status)||needsFollowup(d)).map(d=>({kind:'deposit',op:d})),...Object.values(b.withdrawals).filter(w=>['submitting','pending','uncertain'].includes(w.status)).map(w=>({kind:'withdrawal',op:w}))].filter(j=>!j.op.nextReconcileAt||j.op.nextReconcileAt<=now).sort((a,b)=>(Number(['credited','review'].includes(a.op.status))-Number(['credited','review'].includes(b.op.status)))||(a.op.lastReconciledAt||0)-(b.op.lastReconciledAt||0)).slice(0,limit);
  const result={checked:0,pending:0,errors:0};
  for(const {kind,op} of jobs){try{
   let resource;
   if(kind==='deposit'){
-   if(op.paymentId)resource=await provider.getPayment(op.paymentId);
+   if(op.paymentId){resource=await provider.getPayment(op.paymentId);if(['credited','review'].includes(op.status)&&provider.listPaymentRefunds){const refunds=await provider.listPaymentRefunds(op.paymentId);check(Array.isArray(refunds?.data),'Estornos indisponíveis para conciliação.',502);resource={...resource,refunds:refunds.data};}}
    else if(op.customerId){const matches=await provider.findPayments(op.id);check(Array.isArray(matches.data)&&matches.data.length<=1,'Cobranças duplicadas exigem revisão.',409);resource=matches.data[0];}
   }else if(op.transferId)resource=await provider.getTransfer(op.transferId);
   else if(provider.findTransfers){const matches=await provider.findTransfers(op.id,op.createdAt);check(Array.isArray(matches.data)&&matches.data.length<=1,'Transferências duplicadas exigem revisão.',409);resource=matches.data[0];}
-  await cashTransaction(db,state=>{const book=cashBook(state,environment),current=(kind==='deposit'?book.deposits:book.withdrawals)[op.id];if(!current)return;if(resource){check(resource.externalReference===op.id,'Referência divergente.',409);if(kind==='deposit')settleDeposit(state,environment,resource,now);else{verifyRecoveredTransfer(state,environment,resource);settleWithdrawal(state,environment,resource,now);}}current.lastReconciledAt=now;current.nextReconcileAt=now+60000;delete current.reconcileError;});result.checked++;if(!resource)result.pending++;
+  await cashTransaction(db,state=>{const book=cashBook(state,environment),current=(kind==='deposit'?book.deposits:book.withdrawals)[op.id];if(!current)return;if(resource){check(resource.externalReference===op.id,'Referência divergente.',409);if(kind==='deposit')settleDeposit(state,environment,resource,now);else{verifyRecoveredTransfer(state,environment,resource);settleWithdrawal(state,environment,resource,now);}}current.lastReconciledAt=now;current.nextReconcileAt=now+(['credited','review'].includes(current.status)?3600000:60000);delete current.reconcileError;});result.checked++;if(!resource)result.pending++;
  }catch{result.errors++;await cashTransaction(db,state=>{const book=cashBook(state,environment),current=(kind==='deposit'?book.deposits:book.withdrawals)[op.id];if(current){current.lastReconciledAt=now;current.nextReconcileAt=now+300000;current.reconcileError='manual_or_provider_review';}});}}
  await cashTransaction(db,state=>{cashBook(state,environment).lastReconciliation={at:now,...result};});return result;
 }
@@ -116,7 +116,30 @@ export async function registerAsaasWebhook(db,{env=process.env,provider=createAs
  const status=asaasReadiness(env);check(status.credentialsConfigured,'Configure a chave Asaas do ambiente selecionado.',503);
  const claim=await cashTransaction(db,state=>{const b=cashBook(state,status.environment);if(b.webhookSetup)return {claimed:false,...b.webhookSetup};b.webhookSetup={status:'creating',at:Date.now()};return {claimed:true};});
  const sync=async id=>{const {error}=await db.rpc('arena_finance_runtime_update',{patch:{webhook_registered:true,webhook_id:id,webhook_setup_status:'registered'}});check(!error,'Registro salvo; configuração em conciliação.',503);};
- if(!claim.result.claimed){if(claim.result.status==='registered'){await sync(claim.result.id);return {registered:true};}return {registered:false,pendingReview:true};}
+ if(!claim.result.claimed){
+  if(claim.result.status==='registered'){await sync(claim.result.id);return {registered:true};}
+  // An ambiguous provider POST is never repeated. Reconcile it using Asaas GET only.
+  if(claim.result.status==='uncertain'&&typeof provider.listWebhooks==='function'){
+   let listing;
+   try{listing=await provider.listWebhooks();}catch{return {registered:false,pendingReview:true};}
+   const required=['PAYMENT_RECEIVED','TRANSFER_DONE'];
+   const matches=Array.isArray(listing?.data)?listing.data.filter(item=>
+    typeof item.id==='string'&&item.id.length>0&&item.name==='Arena Xadrez '+status.environment&&
+    item.url===endpoint&&item.enabled===true&&item.interrupted!==true&&
+    Array.isArray(item.events)&&required.every(event=>item.events.includes(event))):[];
+   if(matches.length===1){
+    const id=matches[0].id;
+    await cashTransaction(db,state=>{
+     const entry=cashBook(state,status.environment).webhookSetup;
+     check(entry?.status==='uncertain'||entry?.status==='registered'&&entry.id===id,'Webhook em revisão.',409);
+     if(entry.status==='uncertain')state.cash[status.environment].webhookSetup={status:'registered',id,at:Date.now()};
+    });
+    await sync(id);
+    return {registered:true,recovered:true};
+   }
+  }
+  return {registered:false,pendingReview:true};
+ }
  try{const response=await provider.createWebhook({url:endpoint,email});check(typeof response.id==='string','Resposta inconclusiva.',502);await cashTransaction(db,state=>{cashBook(state,status.environment).webhookSetup={status:'registered',id:response.id,at:Date.now()};});await sync(response.id);return {registered:true};}
  catch(error){await cashTransaction(db,state=>{const op=cashBook(state,status.environment).webhookSetup;if(op?.status==='creating')op.status='uncertain';});await db.rpc('arena_finance_runtime_update',{patch:{webhook_setup_status:'uncertain'}});throw error;}
 }
