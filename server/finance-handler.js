@@ -9,6 +9,11 @@ import {identityPayload,putPrivate,privateImage,unseal,readPrivate,auditEvidence
 const same=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length>=32&&a.length<=255&&Buffer.byteLength(a)===Buffer.byteLength(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 export function allowedFinanceOrigin(origin){if(!origin)return true;try{const u=new URL(origin);return u.protocol==='https:'&&(u.hostname==='arena-xadrez.vercel.app'||/^arena-xadrez-[a-z0-9-]+-xadres\.vercel\.app$/.test(u.hostname))&&!u.port;}catch{return false;}}
 export async function loadFinanceConfig(db,baseEnv=process.env){const {data:c,error}=await db.rpc('arena_finance_config_read');if(error||!c)throw new DomainError('Configuração financeira indisponível.',503);setIdentityKey(c.kyc);return {config:c,env:{...baseEnv,ASAAS_API_KEY:baseEnv.ASAAS_API_KEY||c.asaas_key||'',ASAAS_ENVIRONMENT:c.environment,ASAAS_WEBHOOK_TOKEN:c.webhook,ASAAS_WALLET_ENABLED:String(c.wallet_enabled&&c.webhook_registered),ASAAS_GAMES_ENABLED:String(c.games_enabled),ASAAS_BUSINESS_MODEL_APPROVED:String(c.model_approved),ASAAS_PRODUCTION_ENABLED:String(c.production_enabled)}};}
+export function financeWebhookEndpoint(env=process.env){
+ const base=new URL(env.SUPABASE_URL);
+ if(base.protocol!=='https:'||!/^[a-z0-9]+\.supabase\.co$/.test(base.hostname)||base.port||base.username||base.password)throw new DomainError('URL financeira inválida.',503);
+ return new URL('/functions/v1/arena-finance?action=asaas-webhook',base).href;
+}
 export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=env=>createAsaasClient({env})}){
  return async request=>{
   const origin=request.headers.get('origin'),headers={'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Vary':'Origin'};
@@ -52,7 +57,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    if(action==='reconcile'){
     if(request.method!=='POST'||!same(request.headers.get('x-arena-worker-token'),config.worker))throw new DomainError('Acesso não autorizado.',401);
     let result={skipped:'provider_not_configured'};
-    if(status.credentialsConfigured){if(!config.webhook_registered)await registerAsaasWebhook(db,{env,provider,endpoint:url.origin+url.pathname+'?action=asaas-webhook',email:config.admin_emails?.[0]});result=await reconcileWallet(db,{env,provider});}
+    if(status.credentialsConfigured){if(!config.webhook_registered)await registerAsaasWebhook(db,{env,provider,endpoint:financeWebhookEndpoint(env),email:config.admin_emails?.[0]});result=await reconcileWallet(db,{env,provider});}
     await cashTransaction(db,state=>{expireChallenges(state);autoSettle(state);});await processScheduledTournaments(db);await cleanupTrust(db);
     await db.rpc('arena_finance_runtime_update',{patch:{worker_status:result.skipped||'ok'}});return json(result);
    }
@@ -94,7 +99,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    }
    if(action==='finance-register-webhook'){
     if(!actor.admin)throw new DomainError('Acesso exclusivo da administração.',403);
-    return json(await registerAsaasWebhook(db,{env,provider,endpoint:url.origin+url.pathname+'?action=asaas-webhook',email:actor.email}));
+    return json(await registerAsaasWebhook(db,{env,provider,endpoint:financeWebhookEndpoint(env),email:actor.email}));
    }
    throw new DomainError('Rota não encontrada.',404);
   }catch(error){return json({error:error instanceof DomainError?error.message:'Não foi possível concluir a operação.'},error instanceof DomainError?error.status:500);}
