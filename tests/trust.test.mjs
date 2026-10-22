@@ -12,7 +12,7 @@ test('manual identity review is not needed to play or enter tournaments using TE
  s=run(s,'b','challenge_accept',{id:s.challenges[0].id},2000);
  assert.equal(s.games.length,1);
  assert.equal(s.games[0].currency,'TEST');
- for(const u of ['a','b'])s=run(s,u,'game_accept',{id:s.games[0].id},3000);
+ for(const u of ['a','b'])if(!s.games[0].accepted.includes(u))s=run(s,u,'game_accept',{id:s.games[0].id},3000);
  assert.equal(s.games[0].status,'playing');
 });
 test('verified identity remains restricted to paid BRL players, not casual free players',()=>{
