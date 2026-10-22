@@ -26,7 +26,7 @@ function startEngine(){
  engine=session;
  session.ready=new Promise((resolve,reject)=>{session.loading={resolve,reject};});
  session.ready.catch(()=>{}); // Handle the startup promise even if the caller exits early.
- const deadline=setTimeout(()=>{if(engine===session)stopEngine(Error('Stockfish startup timeout'));},5500);
+ const deadline=setTimeout(()=>{if(engine===session)stopEngine(Error('Stockfish startup timeout'));},10000);
  deadline.unref?.();
  const write=cmd=>{if(!child.stdin.destroyed)child.stdin.write(cmd+'\n');};
  child.on('error',e=>{clearTimeout(deadline);if(engine===session)stopEngine(e);});
