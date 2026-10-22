@@ -5,10 +5,70 @@ import {Chess} from 'chess.js';
 import {applyCommand,SANDRA} from '../src/domain.js';
 const require=createRequire(import.meta.url);
 const enginePath=join(dirname(require.resolve('stockfish/package.json')),'bin','stockfish-19-lite-single.js');
-export function sandraMove(fen){
- const chess=new Chess(fen);if(chess.isGameOver())return Promise.resolve(null);
- return new Promise((resolve,reject)=>{let buffer='',done=false;const child=spawn(process.execPath,[enginePath],{stdio:['pipe','pipe','ignore']});const timer=setTimeout(()=>finish(Error('Stockfish timeout')),10000);function finish(error,move){if(done)return;done=true;clearTimeout(timer);child.kill();error?reject(error):resolve(move);}const send=line=>child.stdin.write(line+'\n');child.on('error',finish);child.on('exit',()=>{if(!done)finish(Error('Stockfish exited'));});child.stdout.on('data',chunk=>{buffer+=chunk;const lines=buffer.split('\n');buffer=lines.pop();for(const line of lines){if(line==='uciok'){send('setoption name Threads value 1');send('setoption name Hash value 64');send('setoption name Skill Level value 20');send('setoption name UCI_LimitStrength value false');send('isready');}if(line==='readyok'){send('position fen '+fen);send('go movetime 1000');}const match=line.match(/^bestmove ([a-h][1-8])([a-h][1-8])([qrbn])?/);if(match){const move={from:match[1],to:match[2],...(match[3]?{promotion:match[3]}:{})};try{chess.move(move);finish(null,move);}catch{finish(Error('Illegal engine move'));}}}});send('uci');});
+// Reuse the Stockfish 19 process for consecutive turns in the same warm Vercel
+// instance. Cold boots still depend on the serverless runtime.
+const THINK_MS=220,IDLE_ENGINE_MS=45000;
+let engine=null,sequence=Promise.resolve(),idleTimer=null;
+function stopEngine(e){
+ const previous=engine;
+ engine=null;
+ if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}
+ if(previous){
+  if(previous.pending){const pending=previous.pending;previous.pending=null;pending.reject(e||Error('Engine unavailable'));}
+  if(previous.loading){const loading=previous.loading;previous.loading=null;loading.reject(e||Error('Engine unavailable'));}
+  try{previous.child.kill();}catch{}
+ }
 }
+function startEngine(){
+ if(engine)return engine.ready;
+ const child=spawn(process.execPath,[enginePath],{stdio:['pipe','pipe','ignore']});
+ const session={child,buffer:'',pending:null,loading:null,ready:null};
+ engine=session;
+ session.ready=new Promise((resolve,reject)=>{session.loading={resolve,reject};});
+ session.ready.catch(()=>{}); // Handle the startup promise even if the caller exits early.
+ const deadline=setTimeout(()=>{if(engine===session)stopEngine(Error('Stockfish startup timeout'));},10000);
+ deadline.unref?.();
+ const write=cmd=>{if(!child.stdin.destroyed)child.stdin.write(cmd+'\n');};
+ child.on('error',e=>{clearTimeout(deadline);if(engine===session)stopEngine(e);});
+ child.on('exit',()=>{clearTimeout(deadline);if(engine===session)stopEngine(Error('Stockfish exited'));});
+ child.stdout.on('data',data=>{
+  session.buffer+=data.toString();
+  const rows=session.buffer.split('\n');session.buffer=rows.pop();
+  for(const raw of rows){
+   const line=raw.trim();
+   if(line==='uciok'){write('setoption name Threads value 1');write('setoption name Hash value 16');write('setoption name Skill Level value 20');write('setoption name UCI_LimitStrength value false');write('isready');}
+   if(line==='readyok'&&session.loading){clearTimeout(deadline);session.loading.resolve(session);session.loading=null;}
+   const match=line.match(/^bestmove ([a-h][1-8])([a-h][1-8])([qrbn])?/);
+   if(match&&session.pending){const pending=session.pending;session.pending=null;pending.resolve({from:match[1],to:match[2],...(match[3]?{promotion:match[3]}:{})});}
+  }
+ });
+ write('uci');
+ return session.ready;
+}
+async function calculate(fen){
+ const chess=new Chess(fen);if(chess.isGameOver())return null;
+ if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}
+ const session=await startEngine();
+ if(engine!==session)throw Error('Stockfish session changed');
+ // Only keep the Node event loop alive while the engine is actually thinking.
+ session.child.ref();session.child.stdout.ref?.();session.child.stdin.ref?.();
+ return new Promise((resolve,reject)=>{
+  let settled=false;
+  const deadline=setTimeout(()=>done(Error('Stockfish move timeout')),3000);
+  function done(err,move){if(settled)return;settled=true;clearTimeout(deadline);if(session.pending===pending)session.pending=null;if(err){stopEngine(err);reject(err);return;}try{chess.move(move);resolve(move);}catch{stopEngine(Error('Illegal Stockfish move'));reject(Error('Illegal Stockfish move'));}}
+  const pending={resolve:move=>done(null,move),reject:err=>done(err)};
+  session.pending=pending;
+  try{session.child.stdin.write('position fen '+fen+'\n');session.child.stdin.write('go movetime '+THINK_MS+' depth 22\n');}catch(err){done(err);}
+ }).finally(()=>{
+  if(engine===session){session.child.stdout.unref?.();session.child.stdin.unref?.();session.child.unref();idleTimer=setTimeout(()=>{if(engine===session&&!session.pending)stopEngine();},IDLE_ENGINE_MS);idleTimer.unref?.();}
+ });
+}
+export function sandraMove(fen){
+ const work=sequence.then(()=>calculate(fen));
+ sequence=work.catch(()=>{});
+ return work;
+}
+
 let running;
 export function processSandra(db){if(running)return running;running=work(db).finally(()=>{running=null;});return running;}
 async function work(db){
