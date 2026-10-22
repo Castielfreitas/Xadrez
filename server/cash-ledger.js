@@ -16,21 +16,21 @@ function post(book,user,available,reserved,type,reference,now,{debt=false}={}){
  account.available=a;account.reserved=r;if(a<0)account.frozen=true;
  book.ledger.push({id:crypto.randomUUID(),user,available,reserved,type,reference,at:now,currency:'BRL'});
 }
-export function beginDeposit(state,environment,user,id,value,now=Date.now()){
- const book=cashBook(state,environment);operationId(id);amount(value);
- const old=book.deposits[id];if(old){check(old.user===user&&old.amount===value,'Referência financeira já utilizada.',409);return {operation:old,claimed:false};}
+export function beginDeposit(state,environment,user,id,value,now=Date.now(),method='PIX'){
+ const book=cashBook(state,environment);operationId(id);amount(value);check(['PIX','CARD'].includes(method),'Forma de pagamento inválida.');
+ const old=book.deposits[id];if(old){check(old.user===user&&old.amount===value&&(old.method||'PIX')===method,'Referência financeira já utilizada.',409);return {operation:old,claimed:false};}
  check(!cashAccount(book,user).frozen,'Carteira em revisão.',403);
  check(!Object.values(book.deposits).some(d=>d.user===user&&now-d.createdAt<30000),'Aguarde 30 segundos antes de criar outra recarga.',429);
  check(Object.values(book.deposits).filter(d=>d.user===user&&['creating','pending','uncertain'].includes(d.status)).length<5,'Conclua as recargas pendentes antes de criar outra.');
  if(!book.customers[user]){check(!book.customerLocks[user],'Cadastro financeiro em processamento ou conciliação.',409);book.customerLocks[user]=id;}
- const operation={id,user,amount:value,status:'creating',createdAt:now,notice:PAYMENT_NOTICE,customerId:book.customers[user]||null,paymentId:null,credited:false,reversed:false};
+ const operation={id,user,amount:value,method,status:'creating',createdAt:now,notice:PAYMENT_NOTICE,customerId:book.customers[user]||null,paymentId:null,credited:false,reversed:false};
  book.deposits[id]=operation;return {operation,claimed:true};
 }
 export function bindCustomer(state,environment,id,customerId){const b=cashBook(state,environment),d=b.deposits[id];check(d&&typeof customerId==='string'&&/^cus_[a-zA-Z0-9_-]+$/.test(customerId),'Cliente financeiro inválido.');check(!d.customerId||d.customerId===customerId,'Cliente financeiro divergente.',409);d.customerId=customerId;b.customers[d.user]=customerId;if(b.customerLocks[d.user]===id)delete b.customerLocks[d.user];}
 export function bindPayment(state,environment,id,paymentId){const b=cashBook(state,environment),d=b.deposits[id];check(d&&typeof paymentId==='string'&&/^pay_[a-zA-Z0-9_-]+$/.test(paymentId),'Cobrança inválida.');check(!d.paymentId||d.paymentId===paymentId,'Cobrança divergente.',409);check(!Object.values(b.deposits).some(other=>other.id!==id&&other.paymentId===paymentId),'Cobrança já vinculada.',409);d.paymentId=paymentId;if(['creating','uncertain'].includes(d.status))d.status='pending';}
 export function settleDeposit(state,environment,payment,now=Date.now()){
  const b=cashBook(state,environment),d=b.deposits[payment.externalReference];if(!d)return false;
- check(payment.billingType==='PIX'&&payment.customer===d.customerId&&moneyCents(payment.value)===d.amount,'Dados de cobrança divergentes.',409);
+ check(((d.method||'PIX')==='PIX'?payment.billingType==='PIX':['CREDIT_CARD','DEBIT_CARD'].includes(payment.billingType))&&payment.customer===d.customerId&&moneyCents(payment.value)===d.amount,'Dados de cobrança divergentes.',409);
  bindPayment(state,environment,d.id,payment.id);
  if(payment.status==='RECEIVED'&&!payment.deleted&&!d.credited){
   check(!d.reversed,'Cobrança devolvida não pode ser creditada.',409);const net=moneyCents(payment.netValue);check(net<=d.amount,'Valor líquido inválido.');

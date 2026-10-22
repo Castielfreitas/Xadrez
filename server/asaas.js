@@ -47,6 +47,10 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
    resource(customer,'cus_');
    return request('/payments',{customer,billingType:'PIX',value:cents(amountCents),dueDate:date(dueDate),externalReference:reference(externalReference),description:'Recarga de saldo Arena Xadrez',interest:{value:0},fine:{value:0}});
   },
+  createCardCharge({customer,amountCents,dueDate,externalReference}){
+   resource(customer,'cus_');
+   return request('/payments',{customer,billingType:'CREDIT_CARD',value:cents(amountCents),dueDate:date(dueDate),externalReference:reference(externalReference),description:'Recarga de saldo Arena Xadrez',interest:{value:0},fine:{value:0}});
+  },
   getPayment(id){return request('/payments/'+resource(id,'pay_'));},
   getPixQrCode(id){return request('/payments/'+resource(id,'pay_')+'/pixQrCode');},
   findPayments(externalReference){return request('/payments?externalReference='+reference(externalReference));},
@@ -65,4 +69,12 @@ export function authenticateAsaasWebhook(headers,env=process.env){
  const expected=env.ASAAS_WEBHOOK_TOKEN,received=headers?.['asaas-access-token'];
  if(!validToken(expected)||expected===env.ASAAS_API_KEY||typeof received!=='string'||received.length>255)return false;
  const a=Buffer.from(expected),b=Buffer.from(received);return a.length===b.length&&timingSafeEqual(a,b);
+}
+
+// Card details stay on Asaas. Never redirect a player to an arbitrary provider URL.
+export function cardInvoiceUrl(value,environment){
+ let url;try{url=new URL(value);}catch{throw new DomainError('Página de pagamento inválida.',502);}
+ const host=environment==='production'?'www.asaas.com':environment==='sandbox'?'sandbox.asaas.com':null;
+ requireValue(host&&url.protocol==='https:'&&url.hostname===host&&!url.username&&!url.password&&!url.port&&url.pathname.startsWith('/i/'),'Página de pagamento inválida.');
+ return url.href;
 }

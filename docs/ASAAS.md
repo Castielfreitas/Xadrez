@@ -87,3 +87,12 @@ flags, ainda sem homologação bancária nem ativação dos confrontos em reais.
 - https://docs.asaas.com/reference/recuperar-saldo-da-conta
 - https://docs.asaas.com/docs/receba-eventos-do-asaas-no-seu-endpoint-de-webhook
 - https://docs.asaas.com/docs/retries-e-idempot%C3%AAncia
+
+
+## Cartão por fatura hospedada
+A recarga agora aceita `method: PIX | CARD`. CARD cria uma cobrança `CREDIT_CARD` no servidor e abre a `invoiceUrl` oficial do Asaas, sem receber número, validade ou CVV na Arena. A fatura pode disponibilizar débito conforme a configuração do Asaas. O endpoint privado `wallet-checkout` confere titular, referência, valor, situação e domínio oficial antes de devolver o link. A mesma referência não pode trocar de método. Aprovação (`CONFIRMED`) não libera saldo: somente recebimento (`RECEIVED`) conciliado uma vez. Contestação congela a carteira.
+
+Documentação: https://docs.asaas.com/docs/cobrancas-via-cartao-de-credito . Saques continuam por Pix CPF do titular; a API de transferências documenta Pix/TED, não crédito para cartão. Estorno de uma compra não equivale a saque.
+
+### Estado de ativação
+Código e testes automatizados não substituem homologação bancária. Antes de ativar produção ainda são necessários: token de webhook separado cadastrado nas duas pontas, chave de criptografia KYC, validação de identidade, aceite do Asaas para o modelo específico de campeonatos/carteira, ensaios sandbox de cobrança/recebimento/contestação/saque e conciliação, integração das partidas e torneios à carteira BRL, e confirmação das configurações operacionais. A chave API de produção, isoladamente, não habilita movimentações. Não habilitar flags para contornar essas pendências. Esta versão não declara dinheiro real homologado nem partidas BRL operacionais.
