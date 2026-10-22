@@ -50,6 +50,8 @@ async function calculate(fen){
  if(idleTimer){clearTimeout(idleTimer);idleTimer=null;}
  const session=await startEngine();
  if(engine!==session)throw Error('Stockfish session changed');
+ // Only keep the Node event loop alive while the engine is actually thinking.
+ session.child.ref();session.child.stdout.ref?.();session.child.stdin.ref?.();
  return new Promise((resolve,reject)=>{
   let settled=false;
   const deadline=setTimeout(()=>done(Error('Stockfish move timeout')),3000);
@@ -58,7 +60,7 @@ async function calculate(fen){
   session.pending=pending;
   try{session.child.stdin.write('position fen '+fen+'\n');session.child.stdin.write('go movetime '+THINK_MS+' depth 22\n');}catch(err){done(err);}
  }).finally(()=>{
-  if(engine===session){idleTimer=setTimeout(()=>{if(engine===session&&!session.pending)stopEngine();},IDLE_ENGINE_MS);idleTimer.unref?.();}
+  if(engine===session){session.child.stdout.unref?.();session.child.stdin.unref?.();session.child.unref();idleTimer=setTimeout(()=>{if(engine===session&&!session.pending)stopEngine();},IDLE_ENGINE_MS);idleTimer.unref?.();}
  });
 }
 export function sandraMove(fen){
