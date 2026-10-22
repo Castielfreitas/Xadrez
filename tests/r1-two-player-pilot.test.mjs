@@ -79,5 +79,5 @@ test('pilot tournament results preserve R$2 escrow and pay R$1 prize plus R$1 gr
  assert.equal(b.platform.available,100);
  assert.equal(b.platform.ledger.filter(x=>x.reference===id).length,1);
  assert.equal(b.ledger.filter(x=>x.type==='tournament_prize').length,1);
- assert.throws(()=>action(s,owner,'approve_result',{id:game.id},at+3600110),/.*(concluída|indisponível|finalizada|finalizado|aprovada|encerrada|indisponível).*/i);
+ assert.throws(()=>action(s,owner,'approve_result',{id:game.id},at+3600110),/aguardando homologação/i);
 });
