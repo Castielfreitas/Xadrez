@@ -240,3 +240,11 @@ header,.breadcrumb,.header-right{font-size:14px}
  .tournament-detail-actions>.button{flex:1 1 180px}
  .tournament-cover>span{font-size:12px!important}
 }
+
+/* The result modal uses the same rendered 3D king model as the actual chessboard. */
+.result-card .result-emblem:has(.king-result-piece){height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;line-height:1}
+.result-card .king-result-piece{position:relative;display:inline-flex;width:116px;height:124px;flex:0 0 116px;filter:drop-shadow(0 3px 2px #be934e55) drop-shadow(0 12px 10px #000b)}
+.result-card .king-result-piece .piece-real{position:absolute;inset:0;display:block;width:100%;height:100%;background-repeat:no-repeat;filter:drop-shadow(3px 8px 5px #000a)}
+.result-card .king-result-piece .chess-piece-svg{display:none}
+.result-card.result-loss .king-result-piece{filter:drop-shadow(0 2px 2px #9385745c) drop-shadow(0 12px 10px #000b)}
+@media(max-width:520px){.result-card .result-emblem:has(.king-result-piece){height:105px}.result-card .king-result-piece{width:88px;height:100px;flex-basis:88px}}
