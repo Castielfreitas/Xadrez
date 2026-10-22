@@ -78,7 +78,8 @@ test('readiness blocks production activation without model approval, prod token,
 
 test('production cannot inherit a Sandbox webhook registration or enable wallet',async()=>{
  const c={kyc:'ab'.repeat(32),environment:'production',webhook_registered:true,webhook_id:'wh_sandbox_only',webhook_setup_status:'registered',webhook:'w'.repeat(64),wallet_enabled:true,games_enabled:true,model_approved:true,production_enabled:true};
- const db={rpc:async()=>({data:{...c}}),from:()=>({select:()=>({eq:()=>({single:async()=>({data:{state:{cash:{sandbox:{webhookSetup:{status:'registered',id:'wh_sandbox_only'}}}}}}})})})})};
+ const chain={async single(){return {data:{state:{cash:{sandbox:{webhookSetup:{status:'registered',id:'wh_sandbox_only'}}}}}};}};chain.select=()=>chain;chain.eq=()=>chain;
+ const db={rpc:async()=>({data:{...c}}),from:()=>chain};
  const {config,env}=await loadFinanceConfig(db,{ASAAS_API_KEY:'$aact_prod_fixture'});
  assert.equal(config.webhook_registered,false);
  assert.equal(config.webhook_setup_status,'pending_production_registration');
