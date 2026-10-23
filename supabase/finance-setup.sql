@@ -25,6 +25,7 @@ do $$ begin
  if not exists(select 1 from vault.secrets where name='arena_finance_kyc') then perform vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'),'arena_finance_kyc');end if;
  if not exists(select 1 from vault.secrets where name='arena_finance_webhook') then perform vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'),'arena_finance_webhook');end if;
  if not exists(select 1 from vault.secrets where name='arena_finance_worker') then perform vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'),'arena_finance_worker');end if;
+ if not exists(select 1 from vault.secrets where name='arena_finance_webhook_production') then perform vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'),'arena_finance_webhook_production');end if;
 end $$;
 -- Privileged helpers are in a non-exposed schema; wrappers require the service JWT.
 create or replace function arena_private.finance_config_read() returns jsonb
@@ -33,7 +34,7 @@ declare result jsonb;
 begin
  if coalesce(auth.jwt()->>'role','')<>'service_role' then raise exception 'service only';end if;
  select to_jsonb(c) into result from arena_private.finance_config c where id=true;
- return result||jsonb_build_object('kyc',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_kyc'),'webhook',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_webhook'),'worker',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_worker'),'asaas_key',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_asaas_key'));
+ return result||jsonb_build_object('kyc',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_kyc'),'webhook',(select decrypted_secret from vault.decrypted_secrets where name=case when result->>'environment'='production' then 'arena_finance_webhook_production' else 'arena_finance_webhook' end),'worker',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_worker'),'asaas_key',(select decrypted_secret from vault.decrypted_secrets where name='arena_finance_asaas_key'));
 end $$;
 revoke all on function arena_private.finance_config_read() from public,anon,authenticated;
 grant usage on schema arena_private to service_role;

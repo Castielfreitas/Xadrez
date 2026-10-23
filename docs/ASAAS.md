@@ -98,22 +98,26 @@ nenhum agente deve inventar ou aprovar evidências. Após 30 dias, renovar os do
 Fiscalização por câmera continua no backend de partidas e exige configuração própria;
 o KYC financeiro não ativa a câmera nem compartilha a chave automaticamente com Vercel.
 
-## Estado verificado da implantação
+## Estado verificado da implantação — 23/10/2026
 
-A estrutura privada e o cron foram criados no projeto Arena. A função foi publicada e
-health confirmou criptografia disponível, ambiente Sandbox e pagamentos desativados.
-A chave Sandbox do Asaas e a homologação com o provedor ainda dependem de configuração.
-Testes automatizados locais não são apresentados como pagamentos bancários realizados.
-A publicação do frontend Vercel também precisa ser confirmada: o projeto atingiu limite
-anterior de builds. Não declarar produção pronta apenas porque o código foi integrado.
+- Ambiente privado alterado para `production`; ledger Sandbox preservado e separado.
+- Chave produtiva já existente na Vercel validada por GET no Asaas e importada diretamente
+  para o Vault pelo servidor, sem exibir seu conteúdo. A conta retornou `general=APPROVED`.
+- Webhook produtivo registrado com token próprio, separado do Sandbox. Corrigida a URL
+  canônica pública: o endereço interno de requisições Edge não serve como callback.
+- Conciliação produtiva respondeu HTTP 200 e registrou `last_worker_status=ok`.
+- Flags de carteira, jogos e autorização do proprietário estão ligadas. `model_approved`
+  permanece falso: a aprovação específica da operação comercial não foi confirmada.
+  Assim, o health declara produção, mas não permite operações financeiras reais ainda.
+- Nenhum depósito, saque ou transferência bancária real foi executado pelo agente.
+- Identidades continuam com aprovação manual administrativa por usuário.
+- A interface e os testes de Stockfish local foram publicados na Vercel. Teste real de
+  treino: `1. e4 e6 2. d4 d5 3. exd5 exd5`, nível máximo, sem transações.
 
-## Documentação oficial
-
-- https://docs.asaas.com/docs/receba-eventos-do-asaas-no-seu-endpoint-de-webhook
-- https://docs.asaas.com/reference/criar-novo-webhook
-- https://docs.asaas.com/docs/cobrancas-via-cartao-de-credito
-- https://docs.asaas.com/reference/confirmar-pagamento
-- https://docs.asaas.com/docs/como-adicionar-dinheiro-para-testes
-- https://supabase.com/docs/guides/functions/auth
-- https://supabase.com/docs/guides/functions/schedule-functions
-- https://supabase.com/docs/guides/database/vault
+`supabase/production-key-import.sql` permite apenas importação única por service role,
+com carteira desligada e ainda no Sandbox; fecha ao mudar para produção. Não substitui
+credenciais existentes. A rota de preparação também recusa execução após a mudança.
+Transferências entre jogadores (`wallet-transfer`) usam o saldo BRL liquidado, exigem
+identidade de ambos, recusam bots/carteiras congeladas e gravam débito/crédito em uma
+única revisão atômica, com referência idempotente. Inscrições usam o mesmo saldo.
+Recargas com cartão seguem a fatura hospedada no Asaas; saques seguem via Pix CPF.

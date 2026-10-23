@@ -16,7 +16,7 @@ export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
  const query=new URL(req.url,'https://arena.local').searchParams;const action=query.get('action')||'state';
  const c=config(),ready=Boolean(c.url&&c.key&&process.env.SUPABASE_SERVICE_ROLE_KEY);
- if(req.method==='GET'&&action==='config')return res.status(200).json({configured:ready,supabaseUrl:c.url||null,publishableKey:c.key||null,mode:'sandbox',paymentsEnabled:ready&&paymentsStatus().paymentsEnabled,paymentEnvironment:paymentsStatus().environment,lichessEnabled:false,trustConfigured:trustConfigured(),analysisWorkerConfigured:engineAssetsAvailable()});
+ if(req.method==='GET'&&action==='config')return res.status(200).json({configured:ready,supabaseUrl:c.url||null,publishableKey:c.key||null,mode:process.env.VERCEL_ENV==='production'?'production':'preview',paymentsEnabled:ready&&paymentsStatus().paymentsEnabled,paymentEnvironment:paymentsStatus().environment,lichessEnabled:false,trustConfigured:trustConfigured(),analysisWorkerConfigured:engineAssetsAvailable()});
  if(!ready)return res.status(503).json({error:'Ambiente online ainda não configurado. Use a demonstração local.'});
  try{
  const client=db();let actor=null;
