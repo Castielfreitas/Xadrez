@@ -1,3 +1,4 @@
+import {shopRows} from './i18n-shop.js';
 import {lessonRows,paymentRows} from './i18n-lessons.js';
 export const LANGUAGES={pt:'Português',en:'English',es:'Español',fr:'Français',de:'Deutsch',it:'Italiano'};
 export const LOCALES={pt:'pt-BR',en:'en-US',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT'};
@@ -270,7 +271,7 @@ Essa peça não pode fazer esse lance. Tente outra casa.|That piece cannot make 
 Lance legal! Procure o lance que resolve o objetivo desta lição.|Legal move! Find the move that solves this lesson.|¡Jugada legal! Busca la que resuelve esta lección.|Coup légal ! Cherchez celui qui résout cette leçon.|Legal! Finde den Zug, der die Aufgabe löst.|Mossa legale! Cerca quella che risolve la lezione.
 Bom lance! O adversário respondeu. Encontre a próxima jogada da sequência.|Good move! Find the next move after the opponent's reply.|¡Buena jugada! Encuentra la siguiente tras la respuesta rival.|Bon coup ! Trouvez la suite après la réponse adverse.|Guter Zug! Finde nach der Antwort den nächsten Zug.|Buona mossa! Trova la continuazione dopo la risposta.
 `;
-const dict=new Map((rows+lessonRows+paymentRows).trim().split('\n').map(line=>{const [pt,...translations]=line.split('|');return [pt.toLocaleLowerCase('pt-BR'),Object.fromEntries(['en','es','fr','de','it'].map((lang,i)=>[lang,translations[i]]))];}));
+const dict=new Map((rows+lessonRows+paymentRows+shopRows).trim().split('\n').map(line=>{const [pt,...translations]=line.split('|');return [pt.toLocaleLowerCase('pt-BR'),Object.fromEntries(['en','es','fr','de','it'].map((lang,i)=>[lang,translations[i]]))];}));
 export const hasTranslation=(value,language)=>language==='pt'||Boolean(dict.get(String(value).trim().toLocaleLowerCase('pt-BR'))?.[language]);
 export function translateText(value,language='pt'){
  if(language==='pt'||!LANGUAGES[language]||typeof value!=='string')return value;
@@ -281,6 +282,10 @@ export function translateText(value,language='pt'){
  if(!translated){const level=text.match(/^Nível (\d+) · (.+)$/);if(level)translated=({en:'Level',es:'Nivel',fr:'Niveau',de:'Stufe',it:'Livello'})[language]+' '+level[1]+' · '+translateText(level[2],language);}
  if(!translated){const compound=text.match(/^(Computador|Arena|Jogar|Torneios|Lances|Em andamento e inscrições|Realizados|Cancelados)\s*([·/]\s*.+|\d+)$/);if(compound)translated=translateText(compound[1],language)+' '+(compound[2].startsWith('·')?'· '+translateText(compound[2].slice(1).trim(),language):compound[2].startsWith('/')?'/ '+translateText(compound[2].slice(1).trim(),language):compound[2]);}
  const patterns=[
+ [/^Meus itens \((\d+)\)$/,['My items ($1)','Mis artículos ($1)','Mes articles ($1)','Meine Artikel ($1)','I miei articoli ($1)']],
+ [/^Confirmo a compra deste item por (.+), com débito do meu saldo em reais\.$/,['I confirm purchasing this item for $1 using my BRL wallet balance.','Confirmo la compra por $1 con mi saldo BRL.','Je confirme cet achat pour $1 avec mon solde BRL.','Ich bestätige den Kauf für $1 aus meinem BRL-Guthaben.','Confermo l’acquisto per $1 dal mio saldo BRL.']],
+ [/^Comprar por (.+)$/,['Buy for $1','Comprar por $1','Acheter pour $1','Für $1 kaufen','Acquista per $1']],
+
   [/^(\d+) campeonatos? disponíveis$/,['Available tournaments: $1','Torneos disponibles: $1','Tournois disponibles : $1','Verfügbare Turniere: $1','Tornei disponibili: $1']],
 
   [/^(\d+) de (\d+) concluídas neste aparelho$/,['$1 of $2 completed on this device','$1 de $2 completadas en este dispositivo','$1 sur $2 terminées sur cet appareil','$1 von $2 auf diesem Gerät abgeschlossen','$1 di $2 completate su questo dispositivo']],

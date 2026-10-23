@@ -14,7 +14,7 @@ export async function cashTransaction(db,mutate){
  check(false,'Outra movimentação está sendo processada. Tente novamente.',409);
 }
 function active(state,user){check(state.players[user]?.status==='active','Conta indisponível.',403);}
-function financialIdentity(state,user){
+export function financialIdentity(state,user){
  active(state,user);const identity=state.identities?.[user];check(identity?.status==='verified'&&identity.sealed&&Date.now()-identity.submittedAt<30*86400000,'Verifique sua identidade antes de movimentar reais.',403);
  return JSON.parse(unseal(identity.sealed).toString());
 }

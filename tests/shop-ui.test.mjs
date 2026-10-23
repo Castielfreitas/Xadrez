@@ -1,0 +1,27 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parseHTML} from 'linkedom';
+import {createShopUI} from '../src/shop-ui.js';
+import {createFinanceHandler} from '../server/finance-handler.js';
+import {initialState} from '../src/domain.js';
+import {cashBook,cashAccount} from '../server/cash-ledger.js';
+import {seal,setIdentityKey} from '../server/identity.js';
+const settle=()=>new Promise(r=>setImmediate(r));
+test('shop checkout requires explicit price consent, shows receipt and equips purchased avatar',async()=>{
+ const {window}=parseHTML('<html><body><main></main><dialog id="modal"></dialog></body></html>'),previous=globalThis.document;globalThis.document=window.document;document.querySelector('#modal').close=()=>{};
+ const calls=[],summary={owned:[],orders:[],equipped:null},wallet={account:{available:1000}},equipped=[];
+ try{const ui=createShopUI({actor:()=>({id:'u'}),state:()=>({players:{}}),config:()=>({financeEndpoint:'https://fixture'}),request:async(action,body)=>{calls.push({action,body});if(action==='shop-summary')return structuredClone(summary);if(action==='wallet-summary')return wallet;if(action==='shop-buy'){summary.owned.push(body.sku);wallet.account.available-=490;return {charged:true,order:{id:body.id,sku:body.sku,priceCents:490}};}if(action==='shop-equip'){summary.equipped={avatar:body.sku,premium:true};return {equipped:summary.equipped};}throw Error(action);},modal:html=>document.querySelector('#modal').innerHTML=html,esc:String,toast:()=>{},onLogin:()=>{},onEquipped:value=>equipped.push(value)});
+ document.querySelector('main').innerHTML=ui.render();await settle();
+ const click=async selector=>{const b=document.querySelector(selector);assert(b,selector);b.dispatchEvent(new window.Event('click',{bubbles:true}));await settle();};
+ assert.equal(document.querySelectorAll('.shop-card').length,24);await click('[data-shop-view="avatar-0000"]');await click('[data-shop-confirm]');assert.equal(calls.filter(c=>c.action==='shop-buy').length,0);assert.match(document.querySelector('#shop-error').textContent,/Confirme o item/);
+ document.querySelector('#shop-consent').checked=true;await click('[data-shop-confirm]');const purchase=calls.find(c=>c.action==='shop-buy');assert.equal(purchase.body.expectedPriceCents,490);assert.equal(purchase.body.consent,'arena-shop-v1');assert.match(document.querySelector('#modal').textContent,/Compra concluída/);assert.match(document.querySelector('#modal').textContent,/Comprovante:/);await click('[data-shop-equip="avatar-0000"]');assert.deepEqual(equipped,[{avatar:'avatar-0000',premium:true}]);await click('[data-shop-kind="frame"]');assert(document.querySelector('[data-shop-view="frame-0000"]'));await click('[data-shop-owned="true"]');assert.match(document.querySelector('#shop-root').textContent,/Nenhum item encontrado/);
+ }finally{globalThis.document=previous;}
+});
+test('live HTTP handler authenticates store actions and uses server-priced wallet transactions',async()=>{
+ setIdentityKey('11'.repeat(32));let state=initialState(),revision=0;state.players.u={id:'u',status:'active'};state.identities={u:{status:'verified',submittedAt:Date.now(),sealed:seal(JSON.stringify({cpf:'52998224725',name:'Pessoa Exemplo'})).toString('base64')}};cashAccount(cashBook(state,'sandbox'),'u').available=1000;
+ const db={auth:{getUser:async token=>({data:{user:token==='valid'?{id:'u',email:'fixture@example.org',email_confirmed_at:'2026-01-01'}:null}})},from(){return {select(){return this},eq(){return this},async single(){return {data:{state:structuredClone(state),revision}}}}},async rpc(_,args){if(args.expected_revision!==revision)return {data:false};state=structuredClone(args.next_state);revision++;return {data:true}}};
+ const env={ASAAS_ENVIRONMENT:'sandbox',ASAAS_API_KEY:'fixture',ASAAS_WEBHOOK_TOKEN:'w'.repeat(64),ASAAS_WALLET_ENABLED:'true'},handler=createFinanceHandler({db,load:async()=>({config:{admin_emails:[]},env}),providerFactory:()=>({})});
+ const req=(action,body,auth=true)=>new Request('https://fixture.supabase.co/functions/v1/arena-finance?action='+action,{method:body?'POST':'GET',headers:{'content-type':'application/json',...(auth?{authorization:'Bearer valid'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+ const buy={id:'11111111-1111-4111-8111-111111111111',sku:'avatar-0000',expectedPriceCents:490,consent:'arena-shop-v1'};
+ assert.equal((await handler(req('shop-buy',buy,false))).status,401);assert.equal((await handler(req('shop-buy',{...buy,expectedPriceCents:1}))).status,409);assert.equal((await handler(req('shop-buy',buy))).status,200);assert.equal(state.cash.sandbox.accounts.u.available,510);assert.equal((await handler(req('shop-refund',{id:buy.id,reason:'Estorno solicitado.'}))).status,403);const summary=await (await handler(req('shop-summary'))).json();assert.deepEqual(summary.owned,['avatar-0000']);assert.equal(summary.sales,undefined);assert.equal((await handler(req('shop-equip',{kind:'avatar',sku:'avatar-0000'}))).status,200);assert.equal(state.players.u.cosmeticSelection.avatar,'avatar-0000');
+});
