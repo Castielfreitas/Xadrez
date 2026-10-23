@@ -470,3 +470,8 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 /* Keep language and wallet accessible above the board. */
 .board-page main>header{display:flex;height:48px;padding:0 20px;justify-content:flex-end}.board-page main>header>.breadcrumb,.board-page .header-right>.status-dot,.board-page .header-right>.status-dot+span{display:none}.board-page .header-right{gap:9px}.board-page .header-right>.language-picker{margin:0}.board-page .header-right .balance{margin-left:0;padding:7px 10px}
 @media(min-width:1051px){.board-page .board-layout,.board-page .board-layout.practice-layout{grid-template-columns:minmax(280px,min(820px,calc(100dvh - 198px))) minmax(270px,320px)}}
+
+/* Native menus need their own opaque colors in dark mode. */
+.language-picker select{color:#f4f1e9;color-scheme:dark}
+.language-picker select option{background-color:#202229;color:#f4f1e9}
+.shop-featured{margin:28px 0}.shop-featured-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.shop-featured-card{display:grid;gap:10px;justify-items:center;padding:20px;border:1px solid #78613a;border-radius:18px;background:radial-gradient(ellipse at top,#443552,#191c24);color:#f4f1e9;cursor:pointer}.shop-featured-card .shop-art-preview{width:110px;height:110px}.avatar-special{filter:drop-shadow(0 0 4px #a991ee80);animation:arena-legend-glow 4s ease-in-out infinite alternate}@keyframes arena-legend-glow{to{filter:drop-shadow(0 0 8px #f4c26ca0)}}@media(max-width:650px){.shop-featured-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(prefers-reduced-motion:reduce){.avatar-special{animation:none}}
