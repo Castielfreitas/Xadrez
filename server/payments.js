@@ -121,7 +121,7 @@ export async function claimPlatformRevenue(db,actor,input,{env=process.env}={}){
 }
 
 export async function registerAsaasWebhook(db,{env=process.env,provider=createAsaasClient({env}),endpoint,email}){
- const status=asaasReadiness(env);check(status.credentialsConfigured,'Configure a chave Asaas do ambiente selecionado.',503);
+ const status=asaasReadiness(env);check(status.credentialsConfigured,'Configure a chave do processador de pagamentos do ambiente selecionado.',503);
  const claim=await cashTransaction(db,state=>{const b=cashBook(state,status.environment);if(b.webhookSetup)return {claimed:false,...b.webhookSetup};b.webhookSetup={status:'creating',at:Date.now()};return {claimed:true};});
  const sync=async id=>{const {error}=await db.rpc('arena_finance_runtime_update',{patch:{webhook_registered:true,webhook_id:id,webhook_setup_status:'registered'}});check(!error,'Registro salvo; configuração em conciliação.',503);};
  if(!claim.result.claimed){if(claim.result.status==='registered'){await sync(claim.result.id);return {registered:true};}return {registered:false,pendingReview:true};}

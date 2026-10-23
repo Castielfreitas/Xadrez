@@ -11,7 +11,7 @@ export async function prepareProductionProvider(db,{key,token,vercelEnvironment}
  if(typeof key!=='string'||!key.startsWith('$aact_prod_'))throw new DomainError('Chave produtiva não disponível na Vercel.',503);
  const provider=createAsaasClient({env:{ASAAS_ENVIRONMENT:'production',ASAAS_API_KEY:key}});
  await provider.getBalance();const status=await provider.getAccountStatus();
- if(status.general!=='APPROVED')throw new DomainError('Conta Asaas produtiva ainda não aprovada.',409);
+ if(status.general!=='APPROVED')throw new DomainError('Conta do processador de pagamentos produtiva ainda não aprovada.',409);
  const saved=await db.rpc('arena_finance_production_key_import',{p_key:key});
  if(saved.error)throw new DomainError('Não foi possível guardar a configuração produtiva.',503);
  return {productionKeyStored:true,providerAccountApproved:true,financialOperationsEnabled:false};
