@@ -399,3 +399,27 @@ svg.arena-trophy-3d{color:#e0b25f;overflow:visible;filter:drop-shadow(-1px -1px 
 .board .capture-effect .capture-splash{inset:4%;background:radial-gradient(ellipse at 46% 53%,#9b233b99 0 8%,#9b233b44 12%,transparent 21%),radial-gradient(circle at 67% 36%,#a9233e77 0 3%,transparent 5%),radial-gradient(circle at 27% 66%,#9b233b66 0 3%,transparent 6%);mix-blend-mode:normal}
 @media(prefers-reduced-motion:reduce){.board .piece:not(.capture-shard),.board .square .piece-real{transition-duration:0ms!important;animation-duration:0ms!important}}
 .tournament-tabs{flex-wrap:wrap;margin-bottom:24px}.tournament-tabs button span{margin-left:6px;opacity:.75}
+/* Compact knights in the two promotional cards. Keep the actual playing pieces intact. */
+.hero .floating-tag .hero-knight-3d{width:29px!important;height:34px!important;flex:0 0 29px}
+.practice-card .practice-knight{width:29px!important;height:34px!important;flex:0 0 29px}
+.hero-knight-3d .piece-real,.practice-knight .piece-real{width:100%!important;height:100%!important}
+.hero .floating-tag{display:flex;align-items:center;gap:11px;padding:12px 15px;font-size:14px;line-height:1.45}
+.hero{overflow:hidden;background:radial-gradient(ellipse at 77% 32%,#7d613526,transparent 49%),radial-gradient(ellipse at 21% 75%,#172d384d,transparent 55%),linear-gradient(112deg,#11151b 15%,#1e242a 52%,#33291e);border:1px solid #8c714b80;box-shadow:0 24px 65px #0005,inset 0 1px 0 #ffefc62b}
+.hero-copy{z-index:5}.hero-art{isolation:isolate;min-height:385px}
+.hero-board-scene{z-index:2;animation:hero-board-breathe 8s ease-in-out infinite}
+.hero-board-3d{transform:rotateX(calc(37deg + var(--hero-y,0deg))) rotateZ(-23deg) rotateY(var(--hero-x,0deg));transition:transform 650ms cubic-bezier(.2,.7,.2,1);box-shadow:inset 0 0 0 3px #fff0c199,inset 0 0 10px #23160d,0 6px 0 #4f371f,0 14px 0 #271b10,18px 30px 4px #0008,30px 52px 40px #000a,0 0 100px #dba75418}
+.hero-board-3d:before{background:radial-gradient(ellipse at var(--hero-light,62%) 30%,#fff6cd42,transparent 56%),linear-gradient(122deg,#fff8d913,transparent 40%,#00000026);mix-blend-mode:soft-light}
+.hero-board-3d:after{background:linear-gradient(110deg,transparent 25%,#ffe7a60b 44%,transparent 60%);box-shadow:inset 0 0 12px #1a100e4d,0 0 35px #e9bd6314}
+.hero-orbit{position:absolute;z-index:0;left:7%;top:5%;width:92%;aspect-ratio:1;border:1px solid #e1b96a22;border-radius:50%;transform:rotateX(55deg) rotateZ(-20deg);box-shadow:0 0 70px #d0a0500a,inset 0 0 45px #f8ca6e06;pointer-events:none}
+.hero-orbit:after{content:'';position:absolute;inset:12%;border:1px solid #e2bd7112;border-radius:50%}
+.hero-stardust{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.hero-stardust i{position:absolute;width:3px;height:3px;border-radius:50%;background:#f1d69a;box-shadow:0 0 9px #e4b9689c;opacity:0;animation:hero-mote 9s ease-in-out infinite;left:16%;top:73%}
+.hero-stardust i:nth-child(2){left:38%;top:58%;animation-delay:1.3s}.hero-stardust i:nth-child(3){left:70%;top:81%;animation-delay:3s}.hero-stardust i:nth-child(4){left:88%;top:47%;animation-delay:5s}.hero-stardust i:nth-child(5){left:58%;top:28%;animation-delay:6s}.hero-stardust i:nth-child(6){left:24%;top:24%;animation-delay:4s}
+@keyframes hero-board-breathe{0%,100%{translate:0 2px}50%{translate:0 -7px}}
+@keyframes hero-mote{0%,100%{opacity:0;transform:translateY(15px) scale(.5)}35%,65%{opacity:.55}90%{opacity:0;transform:translateY(-40px) scale(1)}}
+@media(prefers-reduced-motion:reduce){.hero-board-scene,.hero-stardust i{animation:none!important}.hero-board-3d{transition:none!important}}
+@media(max-width:700px){.hero-art{min-height:310px}.hero .floating-tag{right:6%;bottom:2%;font-size:13px}}
+.tournament-winner{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:17px;margin:18px 0 5px;background:linear-gradient(115deg,#9a71251a,#1c282221);border:1px solid #b891465e;border-radius:12px}
+.tournament-winner>.arena-trophy-3d{width:35px!important;height:35px!important}.winner-player{display:flex;align-items:center;gap:10px;flex:1}.winner-player>div,.winner-award{display:grid;gap:5px}.winner-player small,.winner-award small{color:var(--muted);font-size:11px}.winner-award{text-align:right}.winner-award strong{font-size:19px}.winner-player .player-link{font-size:15px}.tournament-card .tournament-winner{padding:12px}.tournament-card .winner-award{flex:1 1 100%;text-align:left;padding-left:46px}
+.language-picker{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 4px;color:#a9aeb5;font-size:11px}.language-picker select{width:118px;min-width:0;border:1px solid #ffffff1c;border-radius:7px;background:#202229;color:#ddd;padding:7px 6px;font-size:11px}.board-page .language-picker{flex-wrap:wrap;margin:12px 0}.board-page .language-picker select{width:100%}.wallet-region-note{color:var(--muted);font-size:12px;line-height:1.5;max-width:65ch}
+.header-right>.language-picker{display:none}@media(max-width:850px){.header-right>.language-picker{display:flex;margin:0}.header-right>.language-picker>span{display:none}.header-right>.language-picker select{width:96px}.header-right{gap:8px}}

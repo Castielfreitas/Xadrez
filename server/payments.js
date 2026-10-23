@@ -47,7 +47,7 @@ export async function depositCheckout(db,actor,id,{env=process.env,provider=crea
  return {url:cardInvoiceUrl(payment.invoiceUrl,environment)};
 }
 export async function createWithdrawal(db,actor,input,{env=process.env}={}){
- const environment=enabled(env);check(input.consent===PAYMENT_NOTICE,'Confirme as condições do saque.');
+ const environment=enabled(env);check(!input.method||input.method==='PIX','Saque por cartão ou transferência internacional não disponível neste provedor.');check(input.consent===PAYMENT_NOTICE,'Confirme as condições do saque.');
  const r=await cashTransaction(db,state=>{const identity=financialIdentity(state,actor.id);return requestWithdrawal(state,environment,actor.id,input.id,input.amountCents,seal(identity.cpf).toString('base64'));});return publicOperation(r.result);
 }
 export async function decideWithdrawal(db,actor,input,{env=process.env,provider=createAsaasClient({env})}={}){
@@ -87,7 +87,7 @@ async function processEvents(db,{env=process.env,provider=createAsaasClient({env
   });
  }catch{await cashTransaction(db,state=>{const e=cashBook(state,environment).inbox['event:'+event.id];if(e?.status==='pending'){e.attempts++;e.retryAt=now+Math.min(3600000,10000*2**Math.min(e.attempts,8));e.error='provider_reconciliation_pending';}});}}
 }
-export function walletSummary(state,actor,env=process.env){const status=paymentsStatus(env);return {enabled:status.paymentsEnabled,identityVerified:state.identities?.[actor.id]?.status==='verified'&&Boolean(state.identities[actor.id].sealed)&&Date.now()-state.identities[actor.id].submittedAt<30*86400000,notice:PAYMENT_NOTICE,...cashView(state,status.environment||'production',actor.id,actor.admin),...(actor.admin?{providerStatus:status}:{})};}
+export function walletSummary(state,actor,env=process.env){const status=paymentsStatus(env);return {enabled:status.paymentsEnabled,payoutMethods:['PIX'],depositMethods:['PIX','CARD'],internationalPayouts:false,identityVerified:state.identities?.[actor.id]?.status==='verified'&&Boolean(state.identities[actor.id].sealed)&&Date.now()-state.identities[actor.id].submittedAt<30*86400000,notice:PAYMENT_NOTICE,...cashView(state,status.environment||'production',actor.id,actor.admin),...(actor.admin?{providerStatus:status}:{})};}
 
 // Scheduled sweep recovers missed webhooks and ambiguous POST responses using GET only.
 export async function reconcileWallet(db,{env=process.env,provider=createAsaasClient({env}),now=Date.now(),limit=8}={}){
