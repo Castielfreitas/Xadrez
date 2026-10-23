@@ -77,6 +77,6 @@ export function rejectWithdrawal(state,environment,id,admin,now=Date.now()){
 }
 export function cashView(state,environment,user,admin=false){
  const b=cashBook(structuredClone(state),environment),own=Object.hasOwn(b.accounts,user)?b.accounts[user]:{available:0,reserved:0,frozen:false};
- const clean=({sealedCpf,sealedBankAccount,destinationHash,...item})=>item;
+ const clean=({sealedCpf,sealedBankAccount,destinationHash,providerFailure,...item})=>admin&&providerFailure?{...item,providerFailure}:item;
  return {currency:'BRL',environment,account:own,deposits:Object.values(b.deposits).filter(d=>admin||d.user===user).map(clean),withdrawals:Object.values(b.withdrawals).filter(w=>admin||w.user===user).map(clean),ledger:b.ledger.filter(e=>admin||e.user===user),...(admin?{platform:b.platform?{available:b.platform.available,claimed:b.platform.claimed,netAvailable:Math.max(0,b.platform.available-Math.max(0,b.processingFees-(b.platform.costsCovered||0)))}:{available:0,claimed:0,netAvailable:0},lastReconciliation:b.lastReconciliation||null,processingFees:b.processingFees,pendingEvents:Object.values(b.inbox).filter(e=>e.status!=='done').length}:{})};
 }

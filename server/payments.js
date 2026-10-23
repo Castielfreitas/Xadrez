@@ -19,10 +19,10 @@ function financialIdentity(state,user){
  return JSON.parse(unseal(identity.sealed).toString());
 }
 function enabled(env){const status=paymentsStatus(env);check(status.paymentsEnabled,'Recargas e saques aguardam a ativação da integração.',503);return status.environment;}
-function publicOperation({sealedCpf,sealedBankAccount,destinationHash,...operation}){return operation;}
+function publicOperation({sealedCpf,sealedBankAccount,destinationHash,providerFailure,...operation}){return operation;}
 
 export async function createDeposit(db,actor,input,{env=process.env,provider=createAsaasClient({env}),now=Date.now()}={}){
- const environment=enabled(env),method=input.method||'PIX';check(['PIX','CARD'].includes(method),'Forma de pagamento inválida.');check(input.consent===PAYMENT_NOTICE,'Confirme o compartilhamento dos dados de cobrança.');operationId(input.id);
+ const environment=enabled(env),method=input.method||'PIX';check(Number.isSafeInteger(input.amountCents)&&input.amountCents>=500&&input.amountCents<=10000000,'A recarga mínima é de R$ 5,00 e a máxima de R$ 100.000,00.');check(['PIX','CARD'].includes(method),'Forma de pagamento inválida.');check(input.consent===PAYMENT_NOTICE,'Confirme o compartilhamento dos dados de cobrança.');operationId(input.id);
  const reservation=await cashTransaction(db,state=>{const identity=financialIdentity(state,actor.id);return {...beginDeposit(state,environment,actor.id,input.id,input.amountCents,now,method),identity};});
  let d=reservation.result.operation;
  if(!reservation.result.claimed)return publicOperation(d);
@@ -31,7 +31,7 @@ export async function createDeposit(db,actor,input,{env=process.env,provider=cre
   const dueDate=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));
   const payment=await provider[method==='CARD'?'createCardCharge':'createPixCharge']({customer:d.customerId,amountCents:d.amount,dueDate,externalReference:d.id});
   const stored=await cashTransaction(db,state=>{bindPayment(state,environment,d.id,payment.id);return cashBook(state,environment).deposits[d.id];});return publicOperation(stored.result);
- }catch(error){await cashTransaction(db,state=>{const op=cashBook(state,environment).deposits[d.id];if(op&&op.status==='creating')op.status='uncertain';});throw error;}
+ }catch(error){await cashTransaction(db,state=>{const op=cashBook(state,environment).deposits[d.id];if(op&&op.status==='creating'){op.status=error.definitiveRejection?'declined':'uncertain';if(error.providerHttpStatus)op.providerFailure={httpStatus:error.providerHttpStatus,code:error.providerCode,at:Date.now()};if(error.definitiveRejection){op.failureReason='Recarga não criada. Confira os dados e as condições de pagamento.';const book=cashBook(state,environment);if(!op.customerId&&book.customerLocks[op.user]===op.id)delete book.customerLocks[op.user];}}});throw error;}
 }
 export async function depositQr(db,actor,id,{env=process.env,provider=createAsaasClient({env})}={}){
  operationId(id);const p=asaasReadiness(env);check(p.environment,'Ambiente financeiro não configurado.',503);const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();check(!error&&row,'Carteira indisponível.',503);

@@ -3,6 +3,11 @@ export const LANGUAGES={pt:'Português',en:'English',es:'Español',fr:'Français
 export const LOCALES={pt:'pt-BR',en:'en-US',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT'};
 export function detectLanguage(languages=[]){for(const language of languages){const code=String(language).toLowerCase().split(/[-_]/)[0];if(LANGUAGES[code])return code;}return 'en';}
 const rows=`
+Não criada|Not created|No creada|Non créée|Nicht erstellt|Non creata
+Recarga mínima: R$ 5,00.|Minimum deposit: R$ 5.00.|Recarga mínima: R$ 5,00.|Dépôt minimum : 5,00 R$.|Mindesteinzahlung: R$ 5,00.|Ricarica minima: R$ 5,00.
+A recarga mínima é de R$ 5,00.|The minimum deposit is R$ 5.00.|La recarga mínima es R$ 5,00.|Le dépôt minimum est de 5,00 R$.|Die Mindesteinzahlung beträgt R$ 5,00.|La ricarica minima è R$ 5,00.
+Recarga não criada: o valor mínimo é R$ 5,00.|Deposit not created: minimum amount is R$ 5.00.|Recarga no creada: el mínimo es R$ 5,00.|Dépôt non créé : montant minimum 5,00 R$.|Einzahlung nicht erstellt: Mindestbetrag R$ 5,00.|Ricarica non creata: minimo R$ 5,00.
+
 Seu saldo em reais pode ser usado nas partidas e torneios da Arena.|Your BRL balance can be used in Arena games and tournaments.|Tu saldo en BRL puede usarse en partidas y torneos de Arena.|Votre solde en BRL peut être utilisé dans les parties et tournois Arena.|Dein BRL-Guthaben kann für Arena-Partien und Turniere verwendet werden.|Il saldo BRL può essere usato nelle partite e nei tornei Arena.
 Carteira administrativa|Administrative wallet|Cartera administrativa|Portefeuille administratif|Verwaltungs-Wallet|Portafoglio amministrativo
 Consulte a receita, o saldo e o extrato em reais na carteira.|View revenue, balance and BRL transactions in the wallet.|Consulta ingresos, saldo y movimientos en BRL en la cartera.|Consultez les revenus, le solde et les mouvements en BRL dans le portefeuille.|Einnahmen, Guthaben und BRL-Umsätze findest du in der Wallet.|Consulta ricavi, saldo e movimenti in BRL nel portafoglio.
