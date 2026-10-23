@@ -38,7 +38,7 @@ export function productionReadiness(state,config,status,env,now=Date.now()){
   reconciliation_worker_recent:Boolean(config.last_worker_at)&&Number.isFinite(new Date(config.last_worker_at).getTime())&&(now-new Date(config.last_worker_at).getTime())<20*60*1000&&config.last_worker_status==='ok',
   automated_fair_play:state.settings?.analysisEnabled===true
  };
- return {ready:Object.values(checks).every(Boolean),checks,verifiedPilotPlayers:kyc,environment:status.environment,financialOperationsEnabled:status.paymentsEnabled,liveGamesEnabled:status.paymentsEnabled&&env.ASAAS_GAMES_ENABLED==='true',notice:'A aprovação contratual do Asaas e a conciliação real precisam ser verificadas externamente antes de habilitar depósitos.'};
+ return {ready:Object.values(checks).every(Boolean),checks,verifiedPilotPlayers:kyc,environment:status.environment,financialOperationsEnabled:status.paymentsEnabled,liveGamesEnabled:status.paymentsEnabled&&env.ASAAS_GAMES_ENABLED==='true',notice:'A aprovação contratual do processador de pagamentos e a conciliação real precisam ser verificadas externamente antes de habilitar depósitos.'};
 }
 export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=env=>createAsaasClient({env})}){
  return async request=>{

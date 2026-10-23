@@ -19,7 +19,7 @@ export function asaasReadiness(env=process.env){
 
 function cents(value){requireValue(Number.isSafeInteger(value)&&value>0&&value<=100000000,'Informe um valor válido em centavos.');return value/100;}
 function reference(value){requireValue(typeof value==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(value),'Referência da operação inválida.');return value;}
-function resource(value,prefix){requireValue(typeof value==='string'&&value.length<=100&&new RegExp('^'+prefix+'[A-Za-z0-9_-]+$').test(value),'Identificador Asaas inválido.');return encodeURIComponent(value);}
+function resource(value,prefix){requireValue(typeof value==='string'&&value.length<=100&&new RegExp('^'+prefix+'[A-Za-z0-9_-]+$').test(value),'Identificador financeiro inválido.');return encodeURIComponent(value);}
 function date(value){requireValue(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value),'Vencimento inválido.');const parsed=new Date(value+'T00:00:00Z');requireValue(Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===value,'Vencimento inválido.');return value;}
 
 // Server-only provider adapter. Wallet mutations live in cash-ledger.js and payments.js.
@@ -27,14 +27,14 @@ function date(value){requireValue(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/
 export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={}){
  const status=asaasReadiness(env),key=env.ASAAS_API_KEY;
  async function request(path,body,{configuration=false}={}){
-  if(!status.environment||!status.apiKeyConfigured||(body&&!status.credentialsConfigured))throw new DomainError('Integração Asaas aguardando configuração segura.',503);
+  if(!status.environment||!status.apiKeyConfigured||(body&&!status.credentialsConfigured))throw new DomainError('Integração processador de pagamentos aguardando configuração segura.',503);
   if(body&&!configuration&&status.environment==='production'&&(!status.businessModelApproved||!status.productionAuthorized))throw new DomainError('Operação em produção ainda não autorizada para a Arena.',403);
   let response;
   try{response=await fetchImpl(origins[status.environment]+path,{method:body?'POST':'GET',headers:{access_token:key,'User-Agent':'ArenaXadrez/1.0','Content-Type':'application/json',Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(10000),...(body?{body:JSON.stringify(body)}:{})});}
-  catch{throw new DomainError('Resposta do Asaas inconclusiva. Concilie a operação antes de tentar novamente.',502);}
+  catch{throw new DomainError('Resposta do processador de pagamentos inconclusiva. Concilie a operação antes de tentar novamente.',502);}
   // Do not echo upstream errors: they may contain CPF, account details or credentials.
-  if(!response.ok)throw new DomainError('O Asaas não confirmou a operação. Consulte o registro privado da integração.',502);
-  try{return await response.json();}catch{throw new DomainError('Resposta do Asaas inválida. Concilie a operação antes de tentar novamente.',502);}
+  if(!response.ok)throw new DomainError('O processador de pagamentos não confirmou a operação. Consulte o registro privado da integração.',502);
+  try{return await response.json();}catch{throw new DomainError('Resposta do processador de pagamentos inválida. Concilie a operação antes de tentar novamente.',502);}
  }
  return {
   confirmSandboxPayment(id){requireValue(status.environment==='sandbox','Simulação permitida somente no Sandbox.');return request('/sandbox/payment/'+resource(id,'pay_')+'/confirm',{});},
