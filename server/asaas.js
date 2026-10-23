@@ -33,7 +33,11 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
   try{response=await fetchImpl(origins[status.environment]+path,{method:body?'POST':'GET',headers:{access_token:key,'User-Agent':'ArenaXadrez/1.0','Content-Type':'application/json',Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(10000),...(body?{body:JSON.stringify(body)}:{})});}
   catch{throw new DomainError('Resposta do processador de pagamentos inconclusiva. Concilie a operação antes de tentar novamente.',502);}
   // Do not echo upstream errors: they may contain CPF, account details or credentials.
-  if(!response.ok)throw new DomainError('O processador de pagamentos não confirmou a operação. Consulte o registro privado da integração.',502);
+  if(!response.ok){
+   let code;try{const data=await response.json();const value=data?.errors?.[0]?.code;if(typeof value==='string'&&/^[a-z_]{1,64}$/.test(value))code=value;}catch{}
+   const error=new DomainError('O processador de pagamentos recusou a solicitação. Confira os dados e as condições da operação.',response.status===400?422:502);
+   error.providerHttpStatus=response.status;error.providerCode=code||'request_rejected';error.definitiveRejection=[400,401,403,404,422].includes(response.status);throw error;
+  }
   try{return await response.json();}catch{throw new DomainError('Resposta do processador de pagamentos inválida. Concilie a operação antes de tentar novamente.',502);}
  }
  return {
