@@ -21,3 +21,5 @@ export function tournamentViability({capacity,entry,fixedPrize=0,economics='fixe
 }
 
 export function tournamentsForTab(tournaments,tab="active"){return tournaments.filter(t=>tab==="finished"?t.status==="finished":tab==="cancelled"?t.status==="cancelled":["registration","running"].includes(t.status));}
+
+export function tournamentAward(t){if(t.status!=='finished'||!t.winner)return null;const amount=Number.isSafeInteger(t.awardedPrize)?t.awardedPrize:Number.isSafeInteger(t.prizePaid)?t.prizePaid:null;return {winner:t.winner,amount:amount!==null&&amount>=0?amount:null};}
