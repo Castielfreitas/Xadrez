@@ -305,6 +305,15 @@ export function translateText(value,language='pt'){
  if(text.length>2&&text===text.toLocaleUpperCase())translated=translated.toLocaleUpperCase(LOCALES[language]);
  return lead+translated+trail;
 }
+const LANGUAGE_FLAGS={
+ pt:['Brasil','🇧🇷','<rect width="24" height="16" fill="#169b62"/><path d="m12 2 10 6-10 6L2 8z" fill="#ffdf45"/><circle cx="12" cy="8" r="3.4" fill="#2253a1"/><path d="M9 7q3-1 6 2" fill="none" stroke="white" stroke-width=".8"/>'],
+ en:['English','🇬🇧','<rect width="24" height="16" fill="#21468b"/><path d="m0 0 24 16M24 0 0 16" stroke="white" stroke-width="4"/><path d="m0 0 24 16M24 0 0 16" stroke="#cf3348" stroke-width="1.5"/><path d="M12 0v16M0 8h24" stroke="white" stroke-width="6"/><path d="M12 0v16M0 8h24" stroke="#cf3348" stroke-width="3"/>'],
+ es:['España','🇪🇸','<rect width="24" height="16" fill="#c72b3f"/><path d="M0 4h24v8H0z" fill="#ffd34e"/><path d="M6 6h3v4H6z" fill="#c72b3f"/>'],
+ fr:['France','🇫🇷','<path fill="#24479a" d="M0 0h8v16H0z"/><path fill="white" d="M8 0h8v16H8z"/><path fill="#ed3545" d="M16 0h8v16h-8z"/>'],
+ de:['Deutschland','🇩🇪','<rect width="24" height="16" fill="#f4c644"/><path d="M0 0h24v5.34H0z" fill="#17191d"/><path d="M0 5.33h24v5.34H0z" fill="#df3d45"/>'],
+ it:['Italia','🇮🇹','<path fill="#209970" d="M0 0h8v16H0z"/><path fill="white" d="M8 0h8v16H8z"/><path fill="#e4424d" d="M16 0h8v16h-8z"/>']
+};
+export function languageFlag(code){const flag=LANGUAGE_FLAGS[code]||LANGUAGE_FLAGS.en;return `<svg class="language-flag" viewBox="0 0 24 16" aria-hidden="true">${flag[2]}</svg>`;}
 let current='pt';
 export const languageLocale=()=>LOCALES[current];
 export function initLanguage({root=document.body,storage=localStorage,languages=window.navigator?.languages||[],onChange=()=>{}}={}){
@@ -319,5 +328,5 @@ export function initLanguage({root=document.body,storage=localStorage,languages=
  const observer=typeof MutationObserver==='function'?new MutationObserver(()=>{if(!queued){queued=true;queueMicrotask(apply);}}):null;observer?.observe(root,{childList:true,subtree:true,characterData:true});
  function change(choice){preference=LANGUAGES[choice]?choice:'auto';try{storage.setItem('arena-language',preference);}catch{}current=LANGUAGES[preference]?preference:detectLanguage(languages);apply();onChange(current);}
  document.addEventListener('change',e=>{if(e.target.matches?.('[data-language-select]'))change(e.target.value);});apply();
- return {apply,change,get language(){return current},selector(){return `<label class="language-picker"><span>Idioma</span><select data-language-select aria-label="Idioma"><option value="auto" ${!LANGUAGES[preference]?'selected':''}>Automático</option>${Object.entries(LANGUAGES).map(([key,name])=>`<option translate="no" value="${key}" ${preference===key?'selected':''}>${name}</option>`).join('')}</select></label>`;}};
+ return {apply,change,get language(){return current},selector(){return `<label class="language-picker">${languageFlag(current)}<span class="language-label">Idioma</span><select data-language-select aria-label="Idioma"><option value="auto" ${!LANGUAGES[preference]?'selected':''}>🌐 Automático</option>${Object.entries(LANGUAGES).map(([key,name])=>`<option translate="no" value="${key}" ${preference===key?'selected':''}>${LANGUAGE_FLAGS[key][1]} ${name}</option>`).join('')}</select></label>`;}};
 }
