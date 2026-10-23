@@ -31,19 +31,15 @@ function materialNoise(ctx,duration,generate,peak){
 // Slow granular collapse: stones and wood break into many particles.
 // No sharp impulse, sine kick or click resembling a gunshot.
 function crumble(ctx){
- const duration=1.28;
+ const duration=.48;
  materialNoise(ctx,duration,(t,white,grain,low)=>{
-  // A slow first crumble swells into rolling stone debris, never an abrupt "bang".
-  const rise=Math.min(1,t/.115);
-  const roll=Math.exp(-t/.61);
-  const earth=(low*1.65+grain*.17)*rise*roll;
-  const waves=[.17,.38,.65,.88].reduce((sum,c,i)=>
-    sum+Math.exp(-Math.pow((t-c)/(.14+i*.015),2))*(.22-i*.035),0);
-  const heavy=(Math.sin(2*Math.PI*49*t)+Math.sin(2*Math.PI*71*t)*.44)*.065*rise*Math.exp(-t/.58);
-  const gravel=(grain*.28+low*.24)*waves*rise;
-  const dust=low*.35*Math.min(1,t/.32)*Math.exp(-Math.max(0,t-.45)/.39);
-  return (earth+gravel+dust+heavy)*.92;
- },.98);
+  let envelope=0;
+  for(const [n,start] of [0,.09,.19].entries()){
+   const age=t-start;
+   if(age>=0)envelope+=Math.min(1,age/.035)*Math.exp(-age/.07)*(1-n*.25);
+  }
+  return (low*.6+grain*.025)*envelope*Math.min(1,(duration-t)/.10);
+ },.48);
 }
 // Short continuous wooden drag with a soft settling scrape, never a tap.
 function slide(ctx){

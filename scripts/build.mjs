@@ -4,3 +4,7 @@ await rm('dist',{recursive:true,force:true});await mkdir('dist',{recursive:true}
 await build({entryPoints:['src/app.js'],bundle:true,minify:true,format:'esm',outfile:'dist/app.js',target:'es2022'});
 
 await build({entryPoints:['src/computer-worker.js'],bundle:true,minify:true,format:'esm',outfile:'dist/computer-worker.js',target:'es2022'});
+
+await mkdir('dist/engine',{recursive:true});
+for(const file of ['stockfish-19-lite-single.js','stockfish-19-lite-single.wasm'])await cp('node_modules/stockfish/bin/'+file,'dist/engine/'+file);
+await cp('node_modules/stockfish/Copying.txt','dist/engine/COPYING.txt');

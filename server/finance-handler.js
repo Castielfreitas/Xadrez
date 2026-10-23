@@ -1,7 +1,7 @@
 import {timingSafeEqual} from 'node:crypto';
 import {DomainError,applyCommand,publicState,autoSettle,expireChallenges} from '../src/domain.js';
 import {processScheduledTournaments} from './tournament-scheduler.js';
-import {paymentsStatus,walletSummary,createDeposit,depositQr,depositCheckout,createWithdrawal,decideWithdrawal,receivePaymentEvent,reconcileWallet,cashTransaction,claimPlatformRevenue,registerAsaasWebhook} from './payments.js';
+import {paymentsStatus,walletSummary,createDeposit,depositQr,depositCheckout,createWithdrawal,decideWithdrawal,receivePaymentEvent,reconcileWallet,transferCash,cashTransaction,claimPlatformRevenue,registerAsaasWebhook} from './payments.js';
 import {createAsaasClient} from './asaas.js';
 import {cashBook} from './cash-ledger.js';
 import {financialActor} from './finance-access.js';
@@ -18,7 +18,7 @@ export async function loadFinanceConfig(db,baseEnv=process.env){const {data:c,er
   c.webhook_registered=Boolean(c.webhook_registered&&productionHook?.status==='registered'&&productionHook.id&&productionHook.id===c.webhook_id);
   if(!c.webhook_registered)c.webhook_setup_status='pending_production_registration';
  }
- return {config:c,env:{...baseEnv,ASAAS_API_KEY:baseEnv.ASAAS_API_KEY||c.asaas_key||'',ASAAS_ENVIRONMENT:c.environment,ASAAS_WEBHOOK_TOKEN:c.webhook,ASAAS_WALLET_ENABLED:String(c.wallet_enabled&&c.webhook_registered),ASAAS_GAMES_ENABLED:String(c.games_enabled),ASAAS_BUSINESS_MODEL_APPROVED:String(c.model_approved),ASAAS_PRODUCTION_ENABLED:String(c.production_enabled)}};}
+ return {config:c,env:{...baseEnv,ASAAS_API_KEY:(c.environment==='production'?c.asaas_key:baseEnv.ASAAS_API_KEY)||c.asaas_key||baseEnv.ASAAS_API_KEY||'',ASAAS_ENVIRONMENT:c.environment,ASAAS_WEBHOOK_TOKEN:c.webhook,ASAAS_WALLET_ENABLED:String(c.wallet_enabled&&c.webhook_registered),ASAAS_GAMES_ENABLED:String(c.games_enabled),ASAAS_BUSINESS_MODEL_APPROVED:String(c.model_approved),ASAAS_PRODUCTION_ENABLED:String(c.production_enabled)}};}
 // Read-only, admin-scoped go-live checklist. Never returns secrets, identity
 // documents or account balances and never enables a financial feature flag.
 export function productionReadiness(state,config,status,env,now=Date.now()){
@@ -95,6 +95,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    }
    if(JSON.stringify(body).length>6000)throw new DomainError('Solicitação inválida.');
    if(action==='wallet-deposit'){if(env.ASAAS_ENVIRONMENT==='sandbox'){const {data:pilot,error:pilotError}=await db.from('arena_pilot_accounts').select('max_deposit_cents,scope').eq('user_id',actor.id).maybeSingle();if(pilotError||!pilot||pilot.scope!=='sandbox')throw new DomainError('Piloto restrito às contas autorizadas.',403);if(!Number.isSafeInteger(body?.amountCents)||body.amountCents<1||body.amountCents>pilot.max_deposit_cents)throw new DomainError('Limite de recarga no piloto: R$ 1,00.',403);}return json({operation:await createDeposit(db,actor,body,{env,provider})});}
+   if(action==='wallet-transfer')return json({operation:await transferCash(db,actor,body,{env})});
    if(action==='wallet-withdraw')return json({operation:await createWithdrawal(db,actor,body,{env})});
    if(action==='wallet-withdraw-decision')return json({operation:await decideWithdrawal(db,actor,body,{env,provider})});
    if(action==='wallet-platform-transfer')return json(await claimPlatformRevenue(db,actor,body,{env}));

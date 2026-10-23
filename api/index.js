@@ -1,3 +1,4 @@
+import {prepareProductionProvider} from '../server/production-bootstrap.js';
 import {processScheduledTournaments} from '../server/tournament-scheduler.js';
 import {financialActor} from '../server/finance-access.js';
 import {paymentsStatus,walletSummary,createDeposit,depositQr,depositCheckout,createWithdrawal,decideWithdrawal,receivePaymentEvent,processPaymentEvents} from '../server/payments.js';
@@ -19,6 +20,7 @@ export default async function handler(req,res){
  if(!ready)return res.status(503).json({error:'Ambiente online ainda não configurado. Use a demonstração local.'});
  try{
  const client=db();let actor=null;
+ if(action==='finance-production-prepare'){if(req.method!=='POST')throw new DomainError('Método não permitido.',405);return res.status(200).json(await prepareProductionProvider(client,{key:process.env.ASAAS_API_KEY,token:req.headers['x-arena-worker-token'],vercelEnvironment:process.env.VERCEL_ENV}));}
  if(action==='asaas-webhook'){
   if(req.method!=='POST')throw new DomainError('Método não permitido.',405);
   let event;try{event=typeof req.body==='string'?JSON.parse(req.body):req.body;}catch{throw new DomainError('Notificação inválida.');}

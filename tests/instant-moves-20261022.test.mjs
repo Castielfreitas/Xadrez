@@ -20,8 +20,8 @@ test('selection feedback updates only square classes instead of rebuilding the e
  assert.match(app,/cell\.classList\.toggle\('move-target',legal\.includes/);
  assert.match(app,/selected=null;refreshSquareSelection\(\);return/);
 });
-test('menu symbols use slim outlines, and board animations have zero latency',()=>{
+test('menu symbols use slim outlines, and board travel is short and visible',()=>{
  assert.match(app,/stroke-width="1.65"/);
  assert.match(css,/\.nav svg\.arena-menu-icon/);
- assert.match(css,/transition-duration:0ms!important;animation-duration:0ms!important/);
+ assert.match(css,/transition-duration:180ms!important;animation-duration:180ms!important/);
 });
