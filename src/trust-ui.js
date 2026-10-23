@@ -24,18 +24,18 @@ export function createTrustUI({state,actor,config,modal,send,request,render,esc,
   adminIdentityTab=next;selectedIdentityUsers.clear();render();
  }
  function selectIdentity(user,checked){
-  if(!state().identityReviews?.some(r=>r.user===user&&r.status==='pending'))return;
+  if(user===actor()?.id||!state().identityReviews?.some(r=>r.user===user&&r.status==='pending'))return;
   if(checked)selectedIdentityUsers.add(user);else selectedIdentityUsers.delete(user);
   const count=document.querySelector('#identity-selected-count');
   if(count)count.textContent=String(selectedIdentityUsers.size);
  }
  function selectAllIdentities(){
-  const pending=(state().identityReviews||[]).filter(r=>r.status==='pending').slice(0,30);
+  const pending=(state().identityReviews||[]).filter(r=>r.status==='pending'&&r.user!==actor()?.id).slice(0,30);
   for(const r of pending)selectedIdentityUsers.add(r.user);
   render();toast(pending.length?'Selecionados até 30 pedidos pendentes. Confira os documentos antes de aprovar.':'Não há pedidos pendentes.');
  }
  function approveSelected(){
-  const all=(state().identityReviews||[]).filter(r=>selectedIdentityUsers.has(r.user)&&r.status==='pending');
+  const all=(state().identityReviews||[]).filter(r=>selectedIdentityUsers.has(r.user)&&r.status==='pending'&&r.user!==actor()?.id);
   if(!all.length)return toast('Selecione os pedidos pendentes.');
   const missing=all.filter(r=>!inspectedIdentityUsers.has(r.user));
   if(missing.length)return toast('Abra e confira CPF, documento e selfie de cada selecionado antes da aprovação em lote. Restam '+missing.length+' sem conferência nesta sessão.');
@@ -44,7 +44,7 @@ export function createTrustUI({state,actor,config,modal,send,request,render,esc,
  async function saveBatch(form,data){
   if(batchReviewActive)return true;
   if(!data.has('confirmed')){toast('Confirme a conferência individual dos documentos.');return true;}
-  const reason=String(data.get('reason')||'').trim(),users=[...selectedIdentityUsers].filter(user=>inspectedIdentityUsers.has(user)&&(state().identityReviews||[]).some(r=>r.user===user&&r.status==='pending')).slice(0,30);
+  const reason=String(data.get('reason')||'').trim(),users=[...selectedIdentityUsers].filter(user=>user!==actor()?.id&&inspectedIdentityUsers.has(user)&&(state().identityReviews||[]).some(r=>r.user===user&&r.status==='pending')).slice(0,30);
   if(reason.length<10||!users.length){toast('Seleção vazia ou justificativa insuficiente.');return true;}
   batchReviewActive=true;let approved=0;
   try{
@@ -67,7 +67,7 @@ export function createTrustUI({state,actor,config,modal,send,request,render,esc,
   <div class="identity-admin-head"><div><h2>Identidade — fila de revisão</h2><p>Os usuários aprovados saem automaticamente da fila e ficam na aba Aprovados. Apenas a administração pode registrar decisões.</p></div><div class="identity-summary-count"><b>${pending.length}</b><small>pendentes</small></div></div>
   <nav class="identity-tabs" aria-label="Situação das verificações">${tabs.map(([id,label,rows])=>`<button type="button" class="identity-tab ${adminIdentityTab===id?'is-selected':''}" aria-pressed="${adminIdentityTab===id}" data-action="identity-tab" data-status="${id}">${label} <span>${rows.length}</span></button>`).join('')}</nav>
   <div class="identity-queue-controls">${adminIdentityTab==='pending'?`<button class="button outline small" data-action="identity-select-all">Selecionar todos (máx. 30)</button><button class="button primary small" data-action="identity-approve-selected">Aprovar selecionados (<span id="identity-selected-count">${selectedIdentityUsers.size}</span>)</button>`:''}</div>
-  <div class="identity-list">${list.map(r=>`<div class="identity-row"><div class="identity-user">${adminIdentityTab==='pending'?`<label class="identity-select"><input type="checkbox" data-identity-select="${esc(r.user)}" aria-label="Selecionar ${name(r.user)}" ${selectedIdentityUsers.has(r.user)?'checked':''}></label>`:''}<div><b>${name(r.user)}</b><small>${r.submittedAt?new Date(r.submittedAt).toLocaleString('pt-BR'):'Sem data'} · ${esc(({pending:'Aguardando conferência',verified:'Aprovado',rejected:'Rejeitado'})[r.status]||r.status)}${r.screening==='complete'?' · Documentação recebida':''}</small></div></div><div class="identity-row-actions">${r.status==='pending'?`<button class="button outline small" data-action="identity-review" data-id="${esc(r.user)}">Ver CPF, documento e selfie</button>`:`<span class="identity-decision">${r.reviewedAt?new Date(r.reviewedAt).toLocaleDateString('pt-BR'):''}</span>`}</div></div>`).join('')||'<p class="muted">Nenhum pedido nesta aba.</p>'}</div>
+  <div class="identity-list">${list.map(r=>`<div class="identity-row"><div class="identity-user">${adminIdentityTab==='pending'?`<label class="identity-select"><input type="checkbox" data-identity-select="${esc(r.user)}" aria-label="Selecionar ${name(r.user)}" ${r.user===actor()?.id?'disabled title="Outra pessoa administradora deve aprovar esta identidade"':''} ${selectedIdentityUsers.has(r.user)?'checked':''}></label>`:''}<div><b>${name(r.user)}</b><small>${r.submittedAt?new Date(r.submittedAt).toLocaleString('pt-BR'):'Sem data'} · ${esc(({pending:'Aguardando conferência',verified:'Aprovado',rejected:'Rejeitado'})[r.status]||r.status)}${r.screening==='complete'?' · Documentação recebida':''}</small></div></div><div class="identity-row-actions">${r.status==='pending'?`<button class="button outline small" data-action="identity-review" data-id="${esc(r.user)}">Ver CPF, documento e selfie</button>`:`<span class="identity-decision">${r.reviewedAt?new Date(r.reviewedAt).toLocaleDateString('pt-BR'):''}</span>`}</div></div>`).join('')||'<p class="muted">Nenhum pedido nesta aba.</p>'}</div>
   <div class="identity-auto-panel"><div><b>Pré-triagem automática de documentos</b><p>Valida o recebimento dos arquivos e separa pedidos incompletos. Não aprova identidade nem libera dinheiro sem conferência ou prova de verificação externa.</p></div><button class="button ${state().settings.identityAutoScreening?'primary':'outline'} small" data-action="identity-screening-toggle" aria-pressed="${Boolean(state().settings.identityAutoScreening)}">${state().settings.identityAutoScreening?'Triagem ligada':'Ativar triagem'}</button></div>
   <p class="muted">Aprovação automática integral não está disponível sem verificação independente da titularidade. Ativar somente uma conferência de CPF não comprova documento nem biometria.</p>
   ${state().games.filter(g=>g.cameraRequired&&['pending','playing'].includes(g.status)).map(g=>`<h3>Mesa ${esc(g.id.slice(0,8))}</h3>${[g.white,g.black].map(user=>`<button class="button small outline" data-action="camera-review" data-game-id="${g.id}" data-user="${user}">Câmera de ${name(user)}</button>`).join('')}`).join('')}
