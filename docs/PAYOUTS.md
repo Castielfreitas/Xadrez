@@ -24,3 +24,7 @@ Automated tests cover domestic payout creation, privacy, same-holder enforcement
 - https://docs.asaas.com/docs/transferencia-para-contas-de-outra-instituicao-pix-ted
 - https://docs.asaas.com/reference/transferir-para-conta-de-outra-instituicao-ou-chave-pix
 - https://central.ajuda.asaas.com/hc/pt-br/articles/32059697584027-Posso-solicitar-uma-transfer%C3%AAncia-internacional-para-minha-conta
+
+## Computer participation in BRL tournaments
+
+An administrator may include the explicitly identified Casandra computer when the tournament computer setting is enabled. Its entry is funded from the creating administrator's verified BRL wallet, reserved in the tournament, and counted only after funding. Cancellation returns the computer entry to that sponsor; a computer championship prize is credited to the same sponsor wallet. Human prizes are unaffected. Computer rounds do not change human rating. No artificial computer KYC record or conversion of test credits is used. The public registration disclosure states who receives a computer prize. This release does not create or enter any real paid tournament.
