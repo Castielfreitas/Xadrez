@@ -1,4 +1,5 @@
-import {shopSummary,buyItem,equipItem,refundItem} from './shop.js';
+import {financialDashboard,dashboardCsv} from './financial-dashboard.js';
+import {shopSummary,buyItem,equipItem,refundItem,shopPricing,setShopPrice} from './shop.js';
 import {timingSafeEqual} from 'node:crypto';
 import {DomainError,applyCommand,publicState,autoSettle,expireChallenges} from '../src/domain.js';
 import {processScheduledTournaments} from './tournament-scheduler.js';
@@ -67,6 +68,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
     await cashTransaction(db,state=>{expireChallenges(state);autoSettle(state);});await processScheduledTournaments(db);await cleanupTrust(db);
     await db.rpc('arena_finance_runtime_update',{patch:{worker_status:result.skipped||'ok'}});return json(result);
    }
+   if(request.method==='GET'&&action==='shop-catalog'){const {data:catalogRow,error:catalogError}=await db.from('arena_state').select('state').eq('id','main').single();if(catalogError||!catalogRow)throw new DomainError('Catálogo indisponível.',503);return json({pricing:shopPricing(catalogRow.state,env)});}
    const token=request.headers.get('authorization')?.match(/^Bearer (.+)$/)?.[1];if(!token)throw new DomainError('Entre na sua conta.',401);
    const {data:auth,error:authError}=await db.auth.getUser(token);if(authError||!auth.user?.email_confirmed_at)throw new DomainError('Entre com uma conta de e-mail confirmado.',401);
    const actor={id:auth.user.id,email:auth.user.email,admin:(config.admin_emails||[]).some(e=>e.toLowerCase()===auth.user.email?.toLowerCase())};
@@ -74,6 +76,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    if(row.state.players[actor.id]?.status!=='active')throw new DomainError('Conta indisponível.',403);
    if(request.method==='GET'){
     if(action==='production-readiness'){if(!actor.admin)throw new DomainError('Acesso exclusivo da administração.',403);return json(productionReadiness(row.state,config,status,env));}
+    if(action==='financial-dashboard'){const query=Object.fromEntries(url.searchParams);const report=financialDashboard(row.state,actor,query,env);return json(query.format==='csv'?{csv:dashboardCsv(report),filename:'arena-financeiro-'+report.scope+'-'+report.period.fromDate+'-'+report.period.toDate+'.csv'}:report);}
     if(action==='shop-summary')return json(shopSummary(row.state,actor,env));
     if(action==='wallet-summary')return json({...walletSummary(row.state,actor,env),...(actor.admin?{setup:{webhookRegistered:config.webhook_registered,webhookStatus:config.webhook_setup_status,lastWorkerAt:config.last_worker_at,lastWorkerStatus:config.last_worker_status}}:{})});
     if(action==='wallet-pix')return json(await depositQr(db,actor,url.searchParams.get('id'),{env,provider}));
@@ -98,6 +101,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    }
    if(JSON.stringify(body).length>6000)throw new DomainError('Solicitação inválida.');
    if(action==='wallet-deposit'){if(env.ASAAS_ENVIRONMENT==='sandbox'){const {data:pilot,error:pilotError}=await db.from('arena_pilot_accounts').select('max_deposit_cents,scope').eq('user_id',actor.id).maybeSingle();if(pilotError||!pilot||pilot.scope!=='sandbox')throw new DomainError('Piloto restrito às contas autorizadas.',403);if(!Number.isSafeInteger(body?.amountCents)||body.amountCents<1||body.amountCents>pilot.max_deposit_cents)throw new DomainError('Limite de recarga no piloto: R$ 1,00.',403);}return json({operation:await createDeposit(db,actor,body,{env,provider})});}
+   if(action==='shop-price')return json(await setShopPrice(db,actor,body,{env}));
    if(action==='shop-buy')return json(await buyItem(db,actor,body,{env}));
    if(action==='shop-equip')return json(await equipItem(db,actor,body,{env}));
    if(action==='shop-refund')return json(await refundItem(db,actor,body,{env}));
