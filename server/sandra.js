@@ -9,6 +9,7 @@ const enginePath=join(dirname(require.resolve('stockfish/package.json')),'bin','
 // instance. Cold boots still depend on the serverless runtime.
 const THINK_MS=220,IDLE_ENGINE_MS=45000;
 let engine=null,sequence=Promise.resolve(),idleTimer=null;
+const positionCache=new Map();
 function stopEngine(e){
  const previous=engine;
  engine=null;
@@ -64,7 +65,7 @@ async function calculate(fen){
  });
 }
 export function sandraMove(fen){
- const work=sequence.then(()=>calculate(fen));
+ const work=sequence.then(async()=>{if(positionCache.has(fen))return {...positionCache.get(fen)};const move=await calculate(fen);if(move){positionCache.set(fen,{...move});if(positionCache.size>64)positionCache.delete(positionCache.keys().next().value);}return move;});
  sequence=work.catch(()=>{});
  return work;
 }
@@ -75,14 +76,23 @@ async function work(db){
  let job;
  for(let n=0;n<4;n++){
   const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error)return;
-  const g=row.state.games.filter(g=>g.bot===SANDRA&&(!g.botLeaseUntil||g.botLeaseUntil<Date.now())&&(g.status==='pending'&&!g.accepted.includes(SANDRA)||g.status==='playing'&&(new Chess(g.fen).turn()==='w'?g.white:g.black)===SANDRA)).sort((a,b)=>(a.lastMoveAt||a.createdAt||0)-(b.lastMoveAt||b.createdAt||0))[0];if(!g)return;
+  const g=row.state.games.filter(g=>g.bot===SANDRA&&(!g.botRetryAt||g.botRetryAt<Date.now())&&(!g.botLeaseUntil||g.botLeaseUntil<Date.now())&&(g.status==='pending'&&!g.accepted.includes(SANDRA)||g.status==='playing'&&(new Chess(g.fen).turn()==='w'?g.white:g.black)===SANDRA)).sort((a,b)=>(a.lastMoveAt||a.createdAt||0)-(b.lastMoveAt||b.createdAt||0))[0];if(!g)return;
   if(g.status==='pending'&&!g.accepted.includes(SANDRA)){const next=applyCommand(row.state,{id:SANDRA,server:true},{id:`sandra-accept-${g.id}-${g.rematches}`,type:'game_accept',payload:{id:g.id}});const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:next});if(ok)return;continue;}
   if(g.status!=='playing'||(new Chess(g.fen).turn()==='w'?g.white:g.black)!==SANDRA)return;
   const ticket=crypto.randomUUID();g.botLeaseUntil=Date.now()+15000;g.botTicket=ticket;
   const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:row.state});if(ok){job={id:g.id,fen:g.fen,ply:g.moves.length,round:g.rematches,ticket};break;}
  }
  if(!job)return;
- let move;try{move=await sandraMove(job.fen);}catch{return;}
+ let move;try{move=await sandraMove(job.fen);}catch{
+  // A startup error must not leave the player waiting for the 15-second lease.
+  for(let n=0;n<3;n++){
+   const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error||!row)break;
+   const g=row.state.games.find(g=>g.id===job.id);if(!g||g.botTicket!==job.ticket)break;
+   delete g.botLeaseUntil;delete g.botTicket;g.botRetryAt=Date.now()+1000;
+   const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:row.state});if(ok)break;
+  }
+  return;
+ }
  if(!move)return;
  for(let n=0;n<5;n++){
   const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error)return;const g=row.state.games.find(g=>g.id===job.id);

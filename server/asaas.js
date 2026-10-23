@@ -38,6 +38,7 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
  return {
   confirmSandboxPayment(id){requireValue(status.environment==='sandbox','Simulação permitida somente no Sandbox.');return request('/sandbox/payment/'+resource(id,'pay_')+'/confirm',{});},
   getBalance(){return request('/finance/balance');},
+  getAccountStatus(){return request('/myAccount/status');},
   listWebhooks(){return request('/webhooks');},
   createWebhook({url,email}){
    requireValue(typeof url==='string'&&/^https:\/\/[a-z0-9]+\.supabase\.co\/functions\/v1\/arena-finance\?action=asaas-webhook$/.test(url),'URL de webhook inválida.');

@@ -1,6 +1,6 @@
 import {createAsaasClient,asaasReadiness,authenticateAsaasWebhook,cardInvoiceUrl} from './asaas.js';
 import {trustConfigured,unseal,seal} from './identity.js';
-import {PAYMENT_NOTICE,check,moneyCents,cashBook,cashView,beginDeposit,bindCustomer,bindPayment,settleDeposit,requestWithdrawal,claimWithdrawal,bindTransfer,settleWithdrawal,rejectWithdrawal,operationId} from './cash-ledger.js';
+import {PAYMENT_NOTICE,check,moneyCents,cashBook,cashAccount,cashView,beginDeposit,bindCustomer,bindPayment,settleDeposit,requestWithdrawal,claimWithdrawal,bindTransfer,settleWithdrawal,rejectWithdrawal,operationId} from './cash-ledger.js';
 
 export function paymentsStatus(env=process.env){const p=asaasReadiness(env);return {...p,identityConfigured:trustConfigured(),paymentsEnabled:Boolean(p.credentialsConfigured&&trustConfigured()&&env.ASAAS_WALLET_ENABLED==='true'&&(p.environment==='sandbox'||p.businessModelApproved&&p.productionAuthorized))};}
 export async function cashTransaction(db,mutate){
@@ -119,4 +119,27 @@ export async function registerAsaasWebhook(db,{env=process.env,provider=createAs
  if(!claim.result.claimed){if(claim.result.status==='registered'){await sync(claim.result.id);return {registered:true};}return {registered:false,pendingReview:true};}
  try{const response=await provider.createWebhook({url:endpoint,email});check(typeof response.id==='string','Resposta inconclusiva.',502);await cashTransaction(db,state=>{cashBook(state,status.environment).webhookSetup={status:'registered',id:response.id,at:Date.now()};});await sync(response.id);return {registered:true};}
  catch(error){await cashTransaction(db,state=>{const op=cashBook(state,status.environment).webhookSetup;if(op?.status==='creating')op.status='uncertain';});await db.rpc('arena_finance_runtime_update',{patch:{webhook_setup_status:'uncertain'}});throw error;}
+}
+
+// Internal BRL transfer: the two ledger entries and balances commit in one CAS.
+export async function transferCash(db,actor,input,{env=process.env,now=Date.now()}={}){
+ const environment=enabled(env);operationId(input.id);
+ check(input.consent===PAYMENT_NOTICE,'Confirme a transferência.');
+ check(typeof input.to==='string'&&input.to!==actor.id,'Escolha outro jogador.');
+ check(Number.isSafeInteger(input.amountCents)&&input.amountCents>=100&&input.amountCents<=10000000,'Valor inválido.');
+ return (await cashTransaction(db,state=>{
+  financialIdentity(state,actor.id);financialIdentity(state,input.to);
+  check(!state.players[actor.id].bot&&!state.players[input.to].bot,'Transferências disponíveis somente entre jogadores.');
+  const book=cashBook(state,environment),from=cashAccount(book,actor.id),to=cashAccount(book,input.to);
+  check(!from.frozen&&!to.frozen,'Carteira em revisão.',403);
+  book.transfers??={};const prior=book.transfers[input.id];
+  if(prior){check(prior.from===actor.id&&prior.to===input.to&&prior.amount===input.amountCents,'Referência já utilizada.',409);return prior;}
+  check(from.available>=input.amountCents,'Saldo disponível insuficiente.');
+  check(Number.isSafeInteger(to.available+input.amountCents),'Limite de saldo atingido.');
+  from.available-=input.amountCents;to.available+=input.amountCents;
+  const operation={id:input.id,from:actor.id,to:input.to,amount:input.amountCents,status:'done',at:now,currency:'BRL'};
+  book.transfers[input.id]=operation;
+  for(const [user,available,type] of [[actor.id,-input.amountCents,'transfer_sent'],[input.to,input.amountCents,'transfer_received']])book.ledger.push({id:crypto.randomUUID(),user,available,reserved:0,type,reference:input.id,at:now,currency:'BRL'});
+  return operation;
+ })).result;
 }

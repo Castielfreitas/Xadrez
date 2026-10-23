@@ -17,15 +17,15 @@ test('mode selection visibly persists and exposes accessible active state in lob
  assert.match(css,/\.setup-tabs button\.is-selected/);
 });
 test('board movement and its sound finish promptly',()=>{
- assert.match(app,/duration:0,fill:'both'/);
+ assert.match(app,/duration:180,easing:.*?fill:'both'/);
  assert.match(app,/pendingVisualMove=\{id:game.id,baseFen:game.fen,ply,game:predicted\}/);
  assert.match(sound,/const duration=\.18/);
  assert.match(css,/transition-duration:0ms!important/);
 });
-test('capture uses a crisp full-band sound with volume control and dynamic compression',()=>{
+test('capture uses a soft filtered sound with volume control and dynamic compression',()=>{
  assert.match(sound,/function materialNoise\(/);
  assert.match(sound,/function crumble\(/);
- assert.match(sound,/const duration=1\.28/);
+ assert.match(sound,/const duration=\.48/);
  assert.match(sound,/gain\.connect\(master\)/);
  assert.match(sound,/createDynamicsCompressor/);
 });

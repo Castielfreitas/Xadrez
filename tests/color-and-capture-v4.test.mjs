@@ -30,8 +30,8 @@ test('hero knights render with same 3D piece sprites; no emoji glyphs or paid Di
  assert.match(css,/\.hero-board-3d\{/);
 });
 test('capture sounds like rolling rubble, not clipped gunfire',()=>{
- assert.match(sound,/const duration=1\.28/);
+ assert.match(sound,/const duration=\.48/);
  assert.match(sound,/createBiquadFilter\?\.\(\)/);
- assert.match(sound,/const rise=Math\.min\(1,t\/\.115\)/);
+ assert.match(sound,/Math\.min\(1,age\/\.035\)/);
  assert.doesNotMatch(sound,/tone\(ctx,90/);
 });

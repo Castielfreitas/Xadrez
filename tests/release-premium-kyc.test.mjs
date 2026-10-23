@@ -29,9 +29,9 @@ test('only local computer gets a deliberate ~230ms reaction, unlike instant onli
  assert.match(app,/Math\.max\(0,230-\(Date\.now\(\)-startedAt\)\)/);
  assert.match(app,/pendingVisualMove=\{id:game\.id,baseFen:game\.fen,ply,game:predicted\}/);
 });
-test('capture has extended rolling collapse without simulated gunshot/kick notes',()=>{
- assert.match(sound,/const duration=1\.28/);
- assert.match(sound,/const rise=Math\.min\(1,t\/\.115\)/);
+test('capture has soft granular collapse without simulated gunshot/kick notes',()=>{
+ assert.match(sound,/const duration=\.48/);
+ assert.match(sound,/Math\.min\(1,age\/\.035\)/);
  assert.doesNotMatch(sound,/tone\(ctx,90/);
  assert.doesNotMatch(sound,/tone\(ctx,67/);
 });
