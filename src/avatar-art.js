@@ -1,6 +1,6 @@
 import {shopItem} from './shop-catalog.js';
 // Original deterministic vector portraits; each SKU is a real palette/ornament composition.
-export function avatarArt(sku){const a=shopItem(sku);if(!a)return '';const id='art-'+a.id,c=a.color,d=a.dark,g=a.accent,type=a.archetype,eyes='<path d="M35 49l8 1m14 0 8-1" stroke="#e9f8ff" stroke-width="3" stroke-linecap="round"/>';
+export function avatarArt(sku){const a=shopItem(sku);if(!a)return '';if(a.special)return realisticArt(a);const id='art-'+a.id,c=a.color,d=a.dark,g=a.accent,type=a.archetype,eyes='<path d="M35 49l8 1m14 0 8-1" stroke="#e9f8ff" stroke-width="3" stroke-linecap="round"/>';
 const heads=[
  `<path d="M24 26l8 31 18 20 18-20 8-31-20 13-6-6-6 6z" fill="${c}"/><path d="M28 37l15 14-6 12-6-8m41-18L57 51l6 12 6-8" fill="${d}"/><path d="M38 61l12 12 12-12-12-8z" fill="#f1e1c8"/><path d="M45 59h10l-5 5z" fill="${d}"/>`,
  `<path d="M24 29l13 8q13-9 26 0l13-8-3 32q-23 27-46 0z" fill="${c}"/><circle cx="38" cy="50" r="13" fill="#f5e7c9"/><circle cx="62" cy="50" r="13" fill="#f5e7c9"/><circle cx="39" cy="50" r="6" fill="${d}"/><circle cx="61" cy="50" r="6" fill="${d}"/><path d="M45 58h10l-5 10z" fill="${g}"/>`,
@@ -36,3 +36,6 @@ return `<svg class="avatar-art ${a.special?'avatar-special special-'+(type-16):'
 export const premiumSeal=()=>'<span class="premium-seal" role="img" aria-label="Avatar Premium adquirido" title="Premium adquirido na loja Arena. Não é verificação de identidade."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
 function themedColor(item){return item?`color-mix(in srgb, ${item.color} 65%, ${item.accent})`:'#61b4ff';}
 export function cosmeticClasses(cosmetics){const frame=shopItem(cosmetics?.frame),effect=shopItem(cosmetics?.effect);return {classes:[frame?'cosmetic-frame frame-'+frame.style:'',effect?'cosmetic-effect effect-'+effect.style:''].join(' '),color:themedColor(frame||effect),effectColor:themedColor(effect||frame)};}
+
+const PORTRAITS=['solar-guardian','cosmic-heroine','shadow-sovereign','chaos-empress','ancient-dragon','arena-gladiator','electric-creature','tide-guardian','stellar-ninja','iron-titan'];
+function realisticArt(a){const portrait=PORTRAITS[a.archetype-16];return `<span class="avatar-art avatar-realistic avatar-special portrait-style-${a.style}" style="--portrait-accent:${a.color};--portrait-theme:${a.accent}"><img src="/avatars/realistic/${portrait}.webp" alt="" loading="lazy" decoding="async" width="512" height="512"><span class="portrait-aura" aria-hidden="true"></span><span class="portrait-sparkles" aria-hidden="true"></span></span>`;}
