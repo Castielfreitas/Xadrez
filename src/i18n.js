@@ -3,6 +3,11 @@ export const LANGUAGES={pt:'Português',en:'English',es:'Español',fr:'Français
 export const LOCALES={pt:'pt-BR',en:'en-US',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT'};
 export function detectLanguage(languages=[]){for(const language of languages){const code=String(language).toLowerCase().split(/[-_]/)[0];if(LANGUAGES[code])return code;}return 'en';}
 const rows=`
+Seu saldo em reais pode ser usado nas partidas e torneios da Arena.|Your BRL balance can be used in Arena games and tournaments.|Tu saldo en BRL puede usarse en partidas y torneos de Arena.|Votre solde en BRL peut être utilisé dans les parties et tournois Arena.|Dein BRL-Guthaben kann für Arena-Partien und Turniere verwendet werden.|Il saldo BRL può essere usato nelle partite e nei tornei Arena.
+Carteira administrativa|Administrative wallet|Cartera administrativa|Portefeuille administratif|Verwaltungs-Wallet|Portafoglio amministrativo
+Consulte a receita, o saldo e o extrato em reais na carteira.|View revenue, balance and BRL transactions in the wallet.|Consulta ingresos, saldo y movimientos en BRL en la cartera.|Consultez les revenus, le solde et les mouvements en BRL dans le portefeuille.|Einnahmen, Guthaben und BRL-Umsätze findest du in der Wallet.|Consulta ricavi, saldo e movimenti in BRL nel portafoglio.
+Abrir carteira em reais|Open BRL wallet|Abrir cartera en BRL|Ouvrir le portefeuille BRL|BRL-Wallet öffnen|Apri portafoglio BRL
+
 Como receber|How to receive|Cómo recibir|Comment recevoir|Auszahlungsweg|Come ricevere
 Pix · chave CPF do titular|Pix · holder's CPF key|Pix · clave CPF del titular|Pix · clé CPF du titulaire|Pix · CPF-Schlüssel des Inhabers|Pix · chiave CPF del titolare
 TED · conta bancária no Brasil|TED · Brazilian bank account|TED · cuenta bancaria en Brasil|TED · compte bancaire au Brésil|TED · Bankkonto in Brasilien|TED · conto bancario in Brasile
