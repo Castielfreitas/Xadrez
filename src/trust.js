@@ -1,6 +1,6 @@
 export const TRUST_NOTICE='arena-trust-v1';
 export function validCpf(input){const cpf=String(input??'').replace(/\D/g,'');if(!/^\d{11}$/.test(cpf)||/^(\d)\1{10}$/.test(cpf))return false;for(let n=9;n<=10;n++){let sum=0;for(let i=0;i<n;i++)sum+=Number(cpf[i])*(n+1-i);const digit=(sum*10)%11%10;if(digit!==Number(cpf[n]))return false;}return true;}
-export function identitySummary(record){return record?{status:record.status,submittedAt:record.submittedAt,reviewedAt:record.reviewedAt,reason:record.reason||null}: {status:'not_submitted'};}
+export function identitySummary(record){return record?{status:record.status,submittedAt:record.submittedAt,reviewedAt:record.reviewedAt,reason:record.reason||null,screening:record.screening||null,screenedAt:record.screenedAt||null}: {status:'not_submitted'};}
 export function identityRequired(s){return Boolean(s.settings.requireIdentityForStake);}
 export function requireIdentity(s,ids,fail){if(!identityRequired(s))return;for(const id of ids.filter(id=>id!=='arena-sandra'))fail(s.identities?.[id]?.status==='verified','Verifique sua identidade antes de jogar com entrada.');}
 export function precheckIdentity(record,now=Date.now()){
