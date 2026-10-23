@@ -1,3 +1,4 @@
+import {bankDestination} from './bank-destination.js';
 import {timingSafeEqual} from 'node:crypto';
 import {DomainError} from '../src/domain.js';
 import {validCpf} from '../src/trust.js';
@@ -69,6 +70,10 @@ export function createAsaasClient({env=process.env,fetchImpl=globalThis.fetch}={
    const cpf=String(verifiedCpf).replace(/\D/g,''),destination=String(pixCpf).replace(/\D/g,'');
    requireValue(cpf===destination,'O saque deve usar uma chave Pix CPF do mesmo titular.');
    return request('/transfers',{value:cents(amountCents),pixAddressKey:destination,pixAddressKeyType:'CPF',externalReference:reference(externalReference),description:'Saque Arena Xadrez'});
+  },
+  createBankTransfer({amountCents,verifiedCpf,bankAccount,externalReference}){
+   const account=bankDestination({bankCode:bankAccount?.bank?.code,...bankAccount},{cpf:verifiedCpf,name:bankAccount?.ownerName});
+   return request('/transfers',{value:cents(amountCents),operationType:'TED',bankAccount:account,externalReference:reference(externalReference)});
   },
   async findTransfers(externalReference,createdAt=Date.now()){
    reference(externalReference);requireValue(Number.isFinite(createdAt),'Data da transferência inválida.');const since=date(new Date(createdAt-86400000).toISOString().slice(0,10)),matches=[];

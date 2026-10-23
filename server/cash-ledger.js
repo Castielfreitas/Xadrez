@@ -48,12 +48,12 @@ export function settleDeposit(state,environment,payment,now=Date.now()){
  }
  return true;
 }
-export function requestWithdrawal(state,environment,user,id,value,sealedCpf,now=Date.now()){
- const b=cashBook(state,environment);operationId(id);amount(value);const old=b.withdrawals[id];if(old){check(old.user===user&&old.amount===value,'Referência financeira já utilizada.',409);return old;}
+export function requestWithdrawal(state,environment,user,id,value,sealedCpf,now=Date.now(),destination={}){
+ const b=cashBook(state,environment);operationId(id);amount(value);const old=b.withdrawals[id];if(old){check(old.user===user&&old.amount===value&&(old.method||'PIX')===(destination.method||'PIX')&&old.destinationHash===destination.destinationHash,'Referência financeira já utilizada.',409);return old;}
  check(!cashAccount(b,user).frozen,'Carteira em revisão.',403);
  check(!Object.values(b.withdrawals).some(w=>w.user===user&&['requested','submitting','pending','uncertain'].includes(w.status)),'Você já possui um saque em andamento.',409);
  post(b,user,-value,value,'withdrawal_hold',id,now);
- return b.withdrawals[id]={id,user,amount:value,sealedCpf,status:'requested',createdAt:now,notice:PAYMENT_NOTICE,transferId:null};
+ return b.withdrawals[id]={id,user,amount:value,sealedCpf,...destination,status:'requested',createdAt:now,notice:PAYMENT_NOTICE,transferId:null};
 }
 export function claimWithdrawal(state,environment,id,admin,now=Date.now()){
  const b=cashBook(state,environment),w=b.withdrawals[id];check(w,'Saque não encontrado.',404);check(!cashAccount(b,w.user).frozen,'Carteira em revisão.',403);
@@ -66,17 +66,17 @@ export function settleWithdrawal(state,environment,transfer,now=Date.now()){
  check(['submitting','pending','uncertain','done','failed'].includes(w.status),'Transferência sem autorização registrada.',409);
  check(moneyCents(transfer.value)===w.amount,'Valor de saque divergente.',409);bindTransfer(state,environment,w.id,transfer.id);
  if(['done','failed'].includes(w.status))return true;
- if(transfer.status==='DONE'){post(b,w.user,0,-w.amount,'withdrawal_paid',w.id,now);w.status='done';w.finishedAt=now;delete w.sealedCpf;}
- if(['FAILED','CANCELLED'].includes(transfer.status)){post(b,w.user,w.amount,-w.amount,'withdrawal_return',w.id,now);w.status='failed';w.finishedAt=now;delete w.sealedCpf;}
+ if(transfer.status==='DONE'){post(b,w.user,0,-w.amount,'withdrawal_paid',w.id,now);w.status='done';w.finishedAt=now;delete w.sealedCpf;delete w.sealedBankAccount;}
+ if(['FAILED','CANCELLED'].includes(transfer.status)){post(b,w.user,w.amount,-w.amount,'withdrawal_return',w.id,now);w.status='failed';w.finishedAt=now;delete w.sealedCpf;delete w.sealedBankAccount;}
  return true;
 }
 export function rejectWithdrawal(state,environment,id,admin,now=Date.now()){
  const b=cashBook(state,environment),w=b.withdrawals[id];check(w,'Saque não encontrado.',404);if(w.status==='rejected')return;
  check(w.status==='requested','Saque já enviado ao provedor não pode ser devolvido manualmente.',409);
- post(b,w.user,w.amount,-w.amount,'withdrawal_rejected',id,now);w.status='rejected';w.rejectedBy=admin;delete w.sealedCpf;
+ post(b,w.user,w.amount,-w.amount,'withdrawal_rejected',id,now);w.status='rejected';w.rejectedBy=admin;delete w.sealedCpf;delete w.sealedBankAccount;
 }
 export function cashView(state,environment,user,admin=false){
  const b=cashBook(structuredClone(state),environment),own=Object.hasOwn(b.accounts,user)?b.accounts[user]:{available:0,reserved:0,frozen:false};
- const clean=({sealedCpf,...item})=>item;
+ const clean=({sealedCpf,sealedBankAccount,destinationHash,...item})=>item;
  return {currency:'BRL',environment,account:own,deposits:Object.values(b.deposits).filter(d=>admin||d.user===user).map(clean),withdrawals:Object.values(b.withdrawals).filter(w=>admin||w.user===user).map(clean),ledger:b.ledger.filter(e=>admin||e.user===user),...(admin?{platform:b.platform?{available:b.platform.available,claimed:b.platform.claimed,netAvailable:Math.max(0,b.platform.available-Math.max(0,b.processingFees-(b.platform.costsCovered||0)))}:{available:0,claimed:0,netAvailable:0},lastReconciliation:b.lastReconciliation||null,processingFees:b.processingFees,pendingEvents:Object.values(b.inbox).filter(e=>e.status!=='done').length}:{})};
 }
