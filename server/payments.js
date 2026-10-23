@@ -1,3 +1,5 @@
+import {createHash} from 'node:crypto';
+import {bankDestination,sameBankDestination} from './bank-destination.js';
 import {createAsaasClient,asaasReadiness,authenticateAsaasWebhook,cardInvoiceUrl} from './asaas.js';
 import {trustConfigured,unseal,seal} from './identity.js';
 import {PAYMENT_NOTICE,check,moneyCents,cashBook,cashAccount,cashView,beginDeposit,bindCustomer,bindPayment,settleDeposit,requestWithdrawal,claimWithdrawal,bindTransfer,settleWithdrawal,rejectWithdrawal,operationId} from './cash-ledger.js';
@@ -17,7 +19,7 @@ function financialIdentity(state,user){
  return JSON.parse(unseal(identity.sealed).toString());
 }
 function enabled(env){const status=paymentsStatus(env);check(status.paymentsEnabled,'Recargas e saques aguardam a ativação da integração.',503);return status.environment;}
-function publicOperation({sealedCpf,...operation}){return operation;}
+function publicOperation({sealedCpf,sealedBankAccount,destinationHash,...operation}){return operation;}
 
 export async function createDeposit(db,actor,input,{env=process.env,provider=createAsaasClient({env}),now=Date.now()}={}){
  const environment=enabled(env),method=input.method||'PIX';check(['PIX','CARD'].includes(method),'Forma de pagamento inválida.');check(input.consent===PAYMENT_NOTICE,'Confirme o compartilhamento dos dados de cobrança.');operationId(input.id);
@@ -47,8 +49,11 @@ export async function depositCheckout(db,actor,id,{env=process.env,provider=crea
  return {url:cardInvoiceUrl(payment.invoiceUrl,environment)};
 }
 export async function createWithdrawal(db,actor,input,{env=process.env}={}){
- const environment=enabled(env);check(!input.method||input.method==='PIX','Saque por cartão ou transferência internacional não disponível neste provedor.');check(input.consent===PAYMENT_NOTICE,'Confirme as condições do saque.');
- const r=await cashTransaction(db,state=>{const identity=financialIdentity(state,actor.id);return requestWithdrawal(state,environment,actor.id,input.id,input.amountCents,seal(identity.cpf).toString('base64'));});return publicOperation(r.result);
+ const environment=enabled(env);check(!input.method||['PIX','TED'].includes(input.method),'Saque por cartão ou transferência internacional não disponível neste provedor.');check(input.consent===PAYMENT_NOTICE,'Confirme as condições do saque.');
+ const r=await cashTransaction(db,state=>{const identity=financialIdentity(state,actor.id),method=input.method||'PIX';
+  const account=method==='TED'?bankDestination(input.bankAccount,identity):null;
+  const destination={method,...(account?{sealedBankAccount:seal(JSON.stringify(account)).toString('base64'),destinationHash:createHash('sha256').update(JSON.stringify(account)).digest('hex'),destinationLabel:'Banco '+account.bank.code+' · conta ••••'+account.account.slice(-2)+'-'+account.accountDigit}:{})};
+  return requestWithdrawal(state,environment,actor.id,input.id,input.amountCents,seal(identity.cpf).toString('base64'),Date.now(),destination);});return publicOperation(r.result);
 }
 export async function decideWithdrawal(db,actor,input,{env=process.env,provider=createAsaasClient({env})}={}){
  check(actor.admin,'Acesso exclusivo da administração.',403);const environment=enabled(env);operationId(input.id);check(['approve','reject'].includes(input.decision),'Decisão inválida.');
@@ -58,7 +63,8 @@ export async function decideWithdrawal(db,actor,input,{env=process.env,provider=
  let submitted=false;try{
   const identity=await cashTransaction(db,state=>financialIdentity(state,w.user)),cpf=unseal(w.sealedCpf).toString();check(identity.result.cpf===cpf,'Identidade do saque alterada.');
   if(provider.getBalance){const balance=await provider.getBalance();check(moneyCents(balance.balance)>=w.amount,'Saldo do provedor insuficiente para este saque.',409);}
-  submitted=true;const transfer=await provider.createPixTransfer({amountCents:w.amount,verifiedCpf:cpf,pixCpf:cpf,externalReference:w.id});
+  let bankAccount;if(w.method==='TED'){bankAccount=JSON.parse(unseal(w.sealedBankAccount).toString());check(bankAccount.cpfCnpj===cpf&&bankAccount.ownerName===identity.result.name.trim(),'Titularidade bancária alterada.');check(typeof provider.createBankTransfer==='function','Saque bancário indisponível.',503);}
+  submitted=true;const transfer=w.method==='TED'?await provider.createBankTransfer({amountCents:w.amount,verifiedCpf:cpf,bankAccount,externalReference:w.id}):await provider.createPixTransfer({amountCents:w.amount,verifiedCpf:cpf,pixCpf:cpf,externalReference:w.id});
   const stored=await cashTransaction(db,state=>{bindTransfer(state,environment,w.id,transfer.id);return cashBook(state,environment).withdrawals[w.id];});return publicOperation(stored.result);
  }catch(error){await cashTransaction(db,state=>{const op=cashBook(state,environment).withdrawals[w.id];if(op?.status==='submitting')op.status=submitted?'uncertain':'requested';});throw error;}
 }
@@ -71,7 +77,9 @@ export async function receivePaymentEvent(db,headers,input,{env=process.env,now=
  return {received:true};
 }
 function verifyRecoveredTransfer(state,environment,transfer){
- const w=cashBook(state,environment).withdrawals[transfer.externalReference];if(!w||w.transferId)return;
+ const w=cashBook(state,environment).withdrawals[transfer.externalReference];if(!w||['done','failed'].includes(w.status))return;
+ if(w.method==='TED'){const expected=JSON.parse(unseal(w.sealedBankAccount).toString());check(transfer.operationType==='TED'&&sameBankDestination(expected,transfer.bankAccount),'Destino bancário do saque não confirmado. Revisão necessária.',409);return;}
+ if(w.transferId)return;
  check(w.sealedCpf&&typeof transfer.pixAddressKey==='string'&&transfer.pixAddressKey.replace(/\D/g,'')===unseal(w.sealedCpf).toString(),'Destino do saque não confirmado. Revisão necessária.',409);
 }
 let processing;
@@ -87,7 +95,7 @@ async function processEvents(db,{env=process.env,provider=createAsaasClient({env
   });
  }catch{await cashTransaction(db,state=>{const e=cashBook(state,environment).inbox['event:'+event.id];if(e?.status==='pending'){e.attempts++;e.retryAt=now+Math.min(3600000,10000*2**Math.min(e.attempts,8));e.error='provider_reconciliation_pending';}});}}
 }
-export function walletSummary(state,actor,env=process.env){const status=paymentsStatus(env);return {enabled:status.paymentsEnabled,payoutMethods:['PIX'],depositMethods:['PIX','CARD'],internationalPayouts:false,identityVerified:state.identities?.[actor.id]?.status==='verified'&&Boolean(state.identities[actor.id].sealed)&&Date.now()-state.identities[actor.id].submittedAt<30*86400000,notice:PAYMENT_NOTICE,...cashView(state,status.environment||'production',actor.id,actor.admin),...(actor.admin?{providerStatus:status}:{})};}
+export function walletSummary(state,actor,env=process.env){const status=paymentsStatus(env);return {enabled:status.paymentsEnabled,payoutMethods:['PIX','TED'],depositMethods:['PIX','CARD'],internationalPayouts:false,identityVerified:state.identities?.[actor.id]?.status==='verified'&&Boolean(state.identities[actor.id].sealed)&&Date.now()-state.identities[actor.id].submittedAt<30*86400000,notice:PAYMENT_NOTICE,...cashView(state,status.environment||'production',actor.id,actor.admin),...(actor.admin?{providerStatus:status}:{})};}
 
 // Scheduled sweep recovers missed webhooks and ambiguous POST responses using GET only.
 export async function reconcileWallet(db,{env=process.env,provider=createAsaasClient({env}),now=Date.now(),limit=8}={}){
