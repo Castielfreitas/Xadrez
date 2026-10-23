@@ -1,0 +1,4 @@
+// Detect only extension resources visible in this document. Never enumerate installed extensions.
+const selectors='script[src],iframe[src],link[href],object[data],embed[src]';
+export function hasExtensionResources(root){return [...root.querySelectorAll(selectors)].some(node=>/^(chrome-extension|moz-extension|safari-web-extension|ms-browser-extension):/i.test(node.getAttribute('src')||node.getAttribute('href')||node.getAttribute('data')||''));}
+export function watchExtensionResources({root=document,onChange,Observer=globalThis.MutationObserver}={}){let previous;const scan=()=>{const current=hasExtensionResources(root);if(current!==previous){previous=current;onChange(current);}return current;};const observer=typeof Observer==='function'?new Observer(scan):null;observer?.observe(root.documentElement||root,{subtree:true,childList:true,attributes:true,attributeFilter:['src','href','data']});scan();return {scan,stop(){observer?.disconnect();}};}

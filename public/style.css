@@ -429,3 +429,5 @@ html[lang="es-ES"] .mode-card.is-selected::after{content:"✓ Seleccionado"}
 html[lang="fr-FR"] .mode-card.is-selected::after{content:"✓ Sélectionné"}
 html[lang="de-DE"] .mode-card.is-selected::after{content:"✓ Ausgewählt"}
 html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
+
+.integrity-warning{color:#f7dba4;background:#4d371d;border:1px solid #a77737;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.45;max-width:680px}
