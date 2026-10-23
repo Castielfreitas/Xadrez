@@ -423,3 +423,9 @@ svg.arena-trophy-3d{color:#e0b25f;overflow:visible;filter:drop-shadow(-1px -1px 
 .tournament-winner>.arena-trophy-3d{width:35px!important;height:35px!important}.winner-player{display:flex;align-items:center;gap:10px;flex:1}.winner-player>div,.winner-award{display:grid;gap:5px}.winner-player small,.winner-award small{color:var(--muted);font-size:11px}.winner-award{text-align:right}.winner-award strong{font-size:19px}.winner-player .player-link{font-size:15px}.tournament-card .tournament-winner{padding:12px}.tournament-card .winner-award{flex:1 1 100%;text-align:left;padding-left:46px}
 .language-picker{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 4px;color:#a9aeb5;font-size:11px}.language-picker select{width:118px;min-width:0;border:1px solid #ffffff1c;border-radius:7px;background:#202229;color:#ddd;padding:7px 6px;font-size:11px}.board-page .language-picker{flex-wrap:wrap;margin:12px 0}.board-page .language-picker select{width:100%}.wallet-region-note{color:var(--muted);font-size:12px;line-height:1.5;max-width:65ch}
 .header-right>.language-picker{display:none}@media(max-width:850px){.header-right>.language-picker{display:flex;margin:0}.header-right>.language-picker>span{display:none}.header-right>.language-picker select{width:96px}.header-right{gap:8px}}
+
+html[lang="en-US"] .mode-card.is-selected::after{content:"✓ Selected"}
+html[lang="es-ES"] .mode-card.is-selected::after{content:"✓ Seleccionado"}
+html[lang="fr-FR"] .mode-card.is-selected::after{content:"✓ Sélectionné"}
+html[lang="de-DE"] .mode-card.is-selected::after{content:"✓ Ausgewählt"}
+html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}

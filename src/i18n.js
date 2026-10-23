@@ -3,6 +3,14 @@ export const LANGUAGES={pt:'Português',en:'English',es:'Español',fr:'Français
 export const LOCALES={pt:'pt-BR',en:'en-US',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT'};
 export function detectLanguage(languages=[]){for(const language of languages){const code=String(language).toLowerCase().split(/[-_]/)[0];if(LANGUAGES[code])return code;}return 'en';}
 const rows=`
+Entrada em reais · busca automática|BRL entry · automatic matchmaking|Entrada en BRL · búsqueda automática|Entrée en BRL · recherche automatique|BRL-Einsatz · automatische Spielersuche|Ingresso in BRL · ricerca automatica
+Retomar treino|Resume practice|Continuar práctica|Reprendre l'entraînement|Training fortsetzen|Riprendi allenamento
+Criar desafio +|Create challenge +|Crear desafío +|Créer un défi +|Herausforderung erstellen +|Crea una sfida +
+Rápido · 10 min|Rapid · 10 min|Rápidas · 10 min|Rapide · 10 min|Schnellschach · 10 min|Rapido · 10 min
+Modos de jogo|Game modes|Modos de juego|Modes de jeu|Spielmodi|Modalità di gioco
+Modos disponíveis|Available modes|Modos disponibles|Modes disponibles|Verfügbare Modi|Modalità disponibili
+Entre para ver valores|Log in to see amounts|Inicia sesión para ver importes|Connectez-vous pour voir les montants|Anmelden, um Beträge zu sehen|Accedi per vedere gli importi
+
 Arena · Xadrez competitivo|Arena · Competitive chess|Arena · Ajedrez competitivo|Arena · Échecs compétitifs|Arena · Wettkampfschach|Arena · Scacchi competitivi
 Jogar|Play|Jugar|Jouer|Spielen|Gioca
 Torneios|Tournaments|Torneos|Tournois|Turniere|Tornei
@@ -237,6 +245,8 @@ export function translateText(value,language='pt'){
  if(!translated){const level=text.match(/^Nível (\d+) · (.+)$/);if(level)translated=({en:'Level',es:'Nivel',fr:'Niveau',de:'Stufe',it:'Livello'})[language]+' '+level[1]+' · '+translateText(level[2],language);}
  if(!translated){const compound=text.match(/^(Computador|Arena|Jogar|Torneios|Lances|Em andamento e inscrições|Realizados|Cancelados)\s*([·/]\s*.+|\d+)$/);if(compound)translated=translateText(compound[1],language)+' '+(compound[2].startsWith('·')?'· '+translateText(compound[2].slice(1).trim(),language):compound[2].startsWith('/')?'/ '+translateText(compound[2].slice(1).trim(),language):compound[2]);}
  const patterns=[
+  [/^(\d+) campeonatos? disponíveis$/,['Available tournaments: $1','Torneos disponibles: $1','Tournois disponibles : $1','Verfügbare Turniere: $1','Tornei disponibili: $1']],
+
   [/^(\d+) de (\d+) concluídas neste aparelho$/,['$1 of $2 completed on this device','$1 de $2 completadas en este dispositivo','$1 sur $2 terminées sur cet appareil','$1 von $2 auf diesem Gerät abgeschlossen','$1 di $2 completate su questo dispositivo']],
   [/^Seu lance (\d+) de (\d+)$/,['Your move $1 of $2','Tu jugada $1 de $2','Votre coup $1 sur $2','Dein Zug $1 von $2','La tua mossa $1 di $2']],
   [/^· (\d+) tentativas?$/,['· $1 attempts','· $1 intentos','· $1 essais','· $1 Versuche','· $1 tentativi']],
