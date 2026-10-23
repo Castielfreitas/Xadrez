@@ -1,3 +1,4 @@
+import {shopSummary,buyItem,equipItem,refundItem} from './shop.js';
 import {timingSafeEqual} from 'node:crypto';
 import {DomainError,applyCommand,publicState,autoSettle,expireChallenges} from '../src/domain.js';
 import {processScheduledTournaments} from './tournament-scheduler.js';
@@ -73,6 +74,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    if(row.state.players[actor.id]?.status!=='active')throw new DomainError('Conta indisponível.',403);
    if(request.method==='GET'){
     if(action==='production-readiness'){if(!actor.admin)throw new DomainError('Acesso exclusivo da administração.',403);return json(productionReadiness(row.state,config,status,env));}
+    if(action==='shop-summary')return json(shopSummary(row.state,actor,env));
     if(action==='wallet-summary')return json({...walletSummary(row.state,actor,env),...(actor.admin?{setup:{webhookRegistered:config.webhook_registered,webhookStatus:config.webhook_setup_status,lastWorkerAt:config.last_worker_at,lastWorkerStatus:config.last_worker_status}}:{})});
     if(action==='wallet-pix')return json(await depositQr(db,actor,url.searchParams.get('id'),{env,provider}));
     if(action==='wallet-checkout')return json(await depositCheckout(db,actor,url.searchParams.get('id'),{env,provider}));
@@ -96,6 +98,9 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    }
    if(JSON.stringify(body).length>6000)throw new DomainError('Solicitação inválida.');
    if(action==='wallet-deposit'){if(env.ASAAS_ENVIRONMENT==='sandbox'){const {data:pilot,error:pilotError}=await db.from('arena_pilot_accounts').select('max_deposit_cents,scope').eq('user_id',actor.id).maybeSingle();if(pilotError||!pilot||pilot.scope!=='sandbox')throw new DomainError('Piloto restrito às contas autorizadas.',403);if(!Number.isSafeInteger(body?.amountCents)||body.amountCents<1||body.amountCents>pilot.max_deposit_cents)throw new DomainError('Limite de recarga no piloto: R$ 1,00.',403);}return json({operation:await createDeposit(db,actor,body,{env,provider})});}
+   if(action==='shop-buy')return json(await buyItem(db,actor,body,{env}));
+   if(action==='shop-equip')return json(await equipItem(db,actor,body,{env}));
+   if(action==='shop-refund')return json(await refundItem(db,actor,body,{env}));
    if(action==='wallet-transfer')return json({operation:await transferCash(db,actor,body,{env})});
    if(action==='wallet-withdraw')return json({operation:await createWithdrawal(db,actor,body,{env})});
    if(action==='wallet-withdraw-decision')return json({operation:await decideWithdrawal(db,actor,body,{env,provider})});
