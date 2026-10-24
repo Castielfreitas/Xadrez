@@ -60,7 +60,7 @@ export default async function handler(req,res){
  if(body?.type==='settings'&&(body.payload?.requireIdentityForStake||body.payload?.cameraForStake)&&!trustConfigured())throw new DomainError('Configure a criptografia antes de ativar a fiscalização.',503);
  if(body?.type==='tournament_create'&&body.payload?.cameraFinal&&!trustConfigured())throw new DomainError('Configure a câmera privada antes de criar esta final.',503);
  if(!body||JSON.stringify(body).length>5000)throw new DomainError('Solicitação inválida.');
- if(body.type==='demo_credit')throw new DomainError('Recargas serão liberadas após a ativação dos pagamentos.',403);
+ if(body.type==='demo_credit'||body.type==='sandra_fund'&&body.payload?.currency!=='BRL')throw new DomainError('Recargas serão liberadas após a ativação dos pagamentos.',403);
  // Compare-and-swap retries make reservations, acceptance and settlement atomic.
  let current=row;
  for(let attempt=0;attempt<5;attempt++){

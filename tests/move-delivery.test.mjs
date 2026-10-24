@@ -14,7 +14,7 @@ test('computer result commits immediately with no artificial timer and rejects s
 test('realtime notifications coalesce and authenticated authoritative state refresh remains the source of moves',()=>{
  const start=app.indexOf('let lastStatePoll='),end=app.indexOf('async function pollOnlineState',start);
  let callback,subscribed,timers=[],polls=0;const channel={on(type,filter,cb){assert.equal(type,'broadcast');assert.equal(filter.event,'revision');callback=cb;return this;},subscribe(cb){subscribed=cb;return this;}};
- const sandbox={online:true,client:{channel:topic=>{assert.equal(topic,'arena-live-v1');return channel;}},setTimeout(fn){timers.push(fn);return timers.length;},pollOnlineState:()=>polls++,Date};
+ const sandbox={online:true,client:{channel:topic=>{assert.equal(topic,'arena-live-v1');return channel;}},setTimeout(fn){timers.push(fn);return timers.length;},pollOnlineState:()=>polls++,Date,session:null};
  runInNewContext(app.slice(start,end)+';connectLiveState();connectLiveState();',sandbox);
  callback({payload:{state:'untrusted'}});callback({});subscribed('SUBSCRIBED');assert.equal(timers.length,1);
  timers.shift()();assert.equal(polls,1);
