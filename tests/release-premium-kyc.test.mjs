@@ -19,7 +19,7 @@ test('trophies have their own metallic 3D icon while menu navigation remains lig
  assert.match(css,/svg\.arena-trophy-3d/);
  assert.match(app,/class="arena-menu-icon"/);
 });
-test('rating appears for both sides, including Casandra and estimated non-official computer difficulty',()=>{
+test('rating appears for both sides, including Cassandra and estimated non-official computer difficulty',()=>{
  assert.match(app,/function playerRating/);
  assert.match(app,/displayRating/);
  assert.match(app,/Computador <span class="player-rating/);

@@ -29,7 +29,7 @@ test('capture uses a soft filtered sound with volume control and dynamic compres
  assert.match(sound,/gain\.connect\(master\)/);
  assert.match(sound,/createDynamicsCompressor/);
 });
-test('Casandra keeps strongest Stockfish options while reusing a warm engine',()=>{
+test('Cassandra keeps strongest Stockfish options while reusing a warm engine',()=>{
  assert.match(bot,/Skill Level value 20/);
  assert.match(bot,/UCI_LimitStrength value false/);
  assert.match(bot,/THINK_MS=220/);

@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {initialState,applyCommand,SANDRA} from '../src/domain.js';
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),css=readFileSync(new URL('../public/style.css',import.meta.url),'utf8'),sound=readFileSync(new URL('../src/sound.js',import.meta.url),'utf8');
 let seq=0;const act=(s,id,type,payload={})=>applyCommand(s,{id,admin:id==='admin'},{id:'fair-colors-'+(++seq),type,payload},1000+seq);
-test('server alternates assigned colors across Casandra games and lets either side open',()=>{
+test('server alternates assigned colors across Cassandra games and lets either side open',()=>{
  let s=initialState();
  for(const id of ['admin','human']){s=act(s,id,'register',{name:id});s=act(s,id,'demo_credit');}
  s=act(s,'admin','settings',{feeBps:1000,sandraChallenges:true,sandraTournaments:true});

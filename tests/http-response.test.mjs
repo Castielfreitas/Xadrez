@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readApiResponse} from '../src/http-response.js';
+test('proxy errors are safe and never exposed as JSON syntax errors',async()=>{for(const status of [502,503,504])await assert.rejects(()=>readApiResponse(new Response('An error occurred',{status})),/servidor não confirmou/);assert.deepEqual(await readApiResponse(new Response('{"state":{}}')),{state:{}});await assert.rejects(()=>readApiResponse(new Response('null')),/Resposta inválida/);});

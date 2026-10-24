@@ -16,7 +16,7 @@ test('nonprofitable capacity cannot be announced as viable',()=>{
  assert.equal(tournamentViability({capacity:2,entry:100,fixedPrize:1000,economics:'fixed'}).possible,false);
  assert.equal(tournamentViability({capacity:8,entry:0,fixedPrize:100,economics:'fixed'}).minimumStart,null);
 });
-test('Casandra can enroll in multiple tournaments without receiving fake credits',()=>{
+test('Cassandra can enroll in multiple tournaments without receiving fake credits',()=>{
  const now=Date.now(),a={id:'admin',admin:true};
  let s=initialState();s.settings.sandraTournaments=true;s.settings.mode='sandbox';
  s.players.admin={id:'admin',name:'Admin',status:'active',available:5000,reserved:0,joinedAt:now};
