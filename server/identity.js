@@ -1,3 +1,4 @@
+import {validCountry,validDate} from '../src/identity-access.js';
 import {createCipheriv,createDecipheriv,createHmac,randomBytes,hkdfSync} from 'node:crypto';
 import {DomainError} from '../src/domain.js';import {validCpf,TRUST_NOTICE} from '../src/trust.js';
 const BUCKET='arena-trust-private';
@@ -7,7 +8,32 @@ export function trustConfigured(){try{keyFor('encryption');return true;}catch{re
 export function seal(value){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',keyFor('encryption'),iv);const encrypted=Buffer.concat([cipher.update(Buffer.isBuffer(value)?value:Buffer.from(value)),cipher.final()]);return Buffer.concat([iv,cipher.getAuthTag(),encrypted]);}
 export function unseal(value){const b=Buffer.isBuffer(value)?value:Buffer.from(value,'base64');if(b.length<29)throw new DomainError('Conteúdo inválido.');const decipher=createDecipheriv('aes-256-gcm',keyFor('encryption'),b.subarray(0,12));decipher.setAuthTag(b.subarray(12,28));return Buffer.concat([decipher.update(b.subarray(28)),decipher.final()]);}
 export function privateImage(value){if(typeof value!=='string'||value.length>1200000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(value))throw new DomainError('Envie uma imagem JPEG válida.');const b=Buffer.from(value.split(',')[1],'base64');if(b.length<40||b.length>850000||b[0]!==255||b[1]!==216||b.at(-2)!==255||b.at(-1)!==217)throw new DomainError('Imagem inválida ou muito grande.');return b;}
-export function identityPayload(input,now=Date.now()){keyFor('encryption');if(input?.notice!==TRUST_NOTICE)throw new DomainError('Confirme o aviso de privacidade.');if(!validCpf(input.cpf))throw new DomainError('CPF inválido.');const name=String(input.name||'').trim();if(name.length<5||name.length>120)throw new DomainError('Informe o nome completo.');const date=String(input.birthDate||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw new DomainError('Informe a data de nascimento.');const birth=new Date(date+'T00:00:00Z'),today=new Date(now);if(!Number.isFinite(birth.getTime())||birth.toISOString().slice(0,10)!==date)throw new DomainError('Data inválida.');let age=today.getUTCFullYear()-birth.getUTCFullYear();if(today.toISOString().slice(5,10)<date.slice(5))age--;if(age<18||age>120)throw new DomainError('A verificação com premiação exige maioridade.');const cpf=String(input.cpf).replace(/\D/g,'');return {notice:TRUST_NOTICE,cpfHash:createHmac('sha256',keyFor('cpf-deduplication')).update(cpf).digest('hex'),sealed:seal(JSON.stringify({cpf,name,birthDate:date})).toString('base64')};}
+export function identityPayload(input,now=Date.now()){
+ keyFor('encryption');if(input?.notice!==TRUST_NOTICE)throw new DomainError('Confirme o aviso de privacidade.');
+ const documentType=input.documentType||'cpf';if(!['cpf','passport'].includes(documentType))throw new DomainError('Tipo de documento inválido.');
+ const residenceCountry=input.residenceCountry||(documentType==='cpf'?'BR':'');
+ if(!validCountry(residenceCountry))throw new DomainError('Selecione seu país de residência.');
+ const name=String(input.name||'').trim();if(name.length<(documentType==='cpf'?5:2)||name.length>120)throw new DomainError('Informe o nome completo.');
+ const date=String(input.birthDate||'');if(!validDate(date))throw new DomainError('Data de nascimento inválida.');
+ const birth=new Date(date+'T00:00:00Z'),today=new Date(now);let age=today.getUTCFullYear()-birth.getUTCFullYear();if(today.toISOString().slice(5,10)<date.slice(5))age--;
+ if(age<18||age>120)throw new DomainError('A verificação com premiação exige maioridade.');
+ let details,hash;
+ if(documentType==='cpf'){
+  if(!validCpf(input.cpf))throw new DomainError('CPF inválido.');
+  const cpf=String(input.cpf).replace(/\D/g,'');
+  details={cpf,name,birthDate:date,documentType,residenceCountry,issuingCountry:'BR'};
+  hash={cpfHash:createHmac('sha256',keyFor('cpf-deduplication')).update(cpf).digest('hex')};
+ }else{
+  if(!validCountry(input.issuingCountry))throw new DomainError('Selecione o país emissor do passaporte.');
+  const documentNumber=String(input.documentNumber||'').trim().toUpperCase().replace(/[ -]/g,'');
+  if(!/^[A-Z0-9]{4,32}$/.test(documentNumber))throw new DomainError('Informe um número de passaporte válido.');
+  const documentExpiry=String(input.documentExpiry||'');
+  if(!validDate(documentExpiry)||Date.parse(documentExpiry+'T00:00:00Z')<=now)throw new DomainError('Envie um passaporte dentro da validade.');
+  details={name,birthDate:date,documentType,residenceCountry,issuingCountry:input.issuingCountry,documentNumber,documentExpiry};
+  hash={documentHash:createHmac('sha256',keyFor('document-deduplication')).update('passport:'+input.issuingCountry+':'+documentNumber).digest('hex')};
+ }
+ return {notice:TRUST_NOTICE,...hash,documentType,residenceCountry,issuingCountry:details.issuingCountry,...(details.documentExpiry?{documentExpiry:details.documentExpiry}:{}),sealed:seal(JSON.stringify(details)).toString('base64')};
+}
 export async function putPrivate(storage,user,kind,image){const value=seal(privateImage(image));const {error:bucketError}=await storage.createBucket(BUCKET,{public:false,fileSizeLimit:900000,allowedMimeTypes:['application/octet-stream']});if(bucketError&&!String(bucketError.message).toLowerCase().includes('already exists'))throw Error('Private storage unavailable');const {data:bucket,error:bucketReadError}=await storage.getBucket(BUCKET);if(bucketReadError||!bucket||bucket.public!==false)throw Error('Private bucket verification failed');const path=user+'/'+kind+'-'+crypto.randomUUID()+'.bin';const {error}=await storage.from(BUCKET).upload(path,value,{contentType:'application/octet-stream',upsert:false});if(error)throw Error('Private upload failed');return path;}
 export async function readPrivate(storage,path){const {data,error}=await storage.from(BUCKET).download(path);if(error)throw Error('Private download failed');return unseal(Buffer.from(await data.arrayBuffer()));}
 export async function auditEvidenceAccess(db,user,kind,admin){for(let n=0;n<5;n++){const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error)throw Error('Audit unavailable');row.state.audit.push({id:crypto.randomUUID(),actor:admin,action:'private_evidence_view',detail:{user,kind},at:Date.now()});const {data:ok,error:writeError}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:row.state});if(writeError)throw Error('Audit unavailable');if(ok)return;}throw Error('Audit conflict');}

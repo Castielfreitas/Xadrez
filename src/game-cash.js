@@ -1,3 +1,4 @@
+import {identityAccess,INTERNATIONAL_PENDING} from './identity-access.js';
 import {DomainError} from './errors.js';
 const check=(ok,message)=>{if(!ok)throw new DomainError(message,409);};
 export function gameBook(s,source){check(source.currency==='BRL'&&['sandbox','production'].includes(source.paymentEnvironment),'Carteira da partida inválida.');s.cash??={};return s.cash[source.paymentEnvironment]??={accounts:{},customers:{},customerLocks:{},deposits:{},withdrawals:{},inbox:{},ledger:[],processingFees:0};}
@@ -6,7 +7,7 @@ export function cashSpendable(s,user,source){const a=account(gameBook(s,source),
 export function cashGameReady(s,source,now=Date.now(),users=[source.white,source.black]){
  if(source.currency!=='BRL')return;
  const b=gameBook(s,source);
- for(const user of users){check(s.players[user]?.status==='active'&&!account(b,user).frozen,'Há uma carteira ou conta em revisão.');let holder=user;if(user==='arena-sandra'&&s.players[user]?.bot){const t=s.tournaments.find(t=>t.id===(source.tournament||source.id));if(t?.currency==='BRL'&&t.sandra&&t.sandraSponsor&&t.paymentEnvironment===source.paymentEnvironment)holder=t.sandraSponsor;else{check((source.bot==='arena-sandra'||source.target==='arena-sandra'&&source.botConsent===true)&&b.computerSponsor,'Participação financeira do computador não configurada.');holder=b.computerSponsor;}check(s.players[holder]?.status==='active'&&!account(b,holder).frozen,'A carteira responsável pelo computador está em revisão.');}const r=s.identities?.[holder];check(r?.status==='verified'&&r.sealed&&now-r.submittedAt<30*86400000,'Verifique sua identidade antes de movimentar reais.');}
+ for(const user of users){check(s.players[user]?.status==='active'&&!account(b,user).frozen,'Há uma carteira ou conta em revisão.');let holder=user;if(user==='arena-sandra'&&s.players[user]?.bot){const t=s.tournaments.find(t=>t.id===(source.tournament||source.id));if(t?.currency==='BRL'&&t.sandra&&t.sandraSponsor&&t.paymentEnvironment===source.paymentEnvironment)holder=t.sandraSponsor;else{check((source.bot==='arena-sandra'||source.target==='arena-sandra'&&source.botConsent===true)&&b.computerSponsor,'Participação financeira do computador não configurada.');holder=b.computerSponsor;}check(s.players[holder]?.status==='active'&&!account(b,holder).frozen,'A carteira responsável pelo computador está em revisão.');}const access=identityAccess(s.identities?.[holder],now);check(access.reason!=='international_provider_required',INTERNATIONAL_PENDING);check(access.financiallyEligible,'Verifique sua identidade antes de movimentar reais.');}
 }
 export function cashGameEntry(s,user,available,reserved,type,ref,now,source){
  check(Number.isSafeInteger(available)&&Number.isSafeInteger(reserved),'Movimentação inválida.');

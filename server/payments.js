@@ -1,3 +1,5 @@
+import {identityAccess,INTERNATIONAL_PENDING} from '../src/identity-access.js';
+import {validCpf} from '../src/trust.js';
 import {createHash} from 'node:crypto';
 import {bankDestination,sameBankDestination} from './bank-destination.js';
 import {createAsaasClient,asaasReadiness,authenticateAsaasWebhook,cardInvoiceUrl} from './asaas.js';
@@ -15,8 +17,8 @@ export async function cashTransaction(db,mutate){
 }
 function active(state,user){check(state.players[user]?.status==='active','Conta indisponível.',403);}
 export function financialIdentity(state,user){
- active(state,user);const identity=state.identities?.[user];check(identity?.status==='verified'&&identity.sealed&&Date.now()-identity.submittedAt<30*86400000,'Verifique sua identidade antes de movimentar reais.',403);
- return JSON.parse(unseal(identity.sealed).toString());
+ active(state,user);const identity=state.identities?.[user],access=identityAccess(identity);check(access.reason!=='international_provider_required',INTERNATIONAL_PENDING,403);check(access.financiallyEligible,'Verifique sua identidade antes de movimentar reais.',403);
+ const details=JSON.parse(unseal(identity.sealed).toString());check(details.documentType!=='passport'&&validCpf(details.cpf),'Identidade financeira sem CPF válido. Renove sua verificação.',403);return details;
 }
 function enabled(env){const status=paymentsStatus(env);check(status.paymentsEnabled,'Recargas e saques aguardam a ativação da integração.',503);return status.environment;}
 function publicOperation({sealedCpf,sealedBankAccount,destinationHash,providerFailure,...operation}){return operation;}
@@ -95,7 +97,7 @@ async function processEvents(db,{env=process.env,provider=createAsaasClient({env
   });
  }catch{await cashTransaction(db,state=>{const e=cashBook(state,environment).inbox['event:'+event.id];if(e?.status==='pending'){e.attempts++;e.retryAt=now+Math.min(3600000,10000*2**Math.min(e.attempts,8));e.error='provider_reconciliation_pending';}});}}
 }
-export function walletSummary(state,actor,env=process.env){const status=paymentsStatus(env);return {enabled:status.paymentsEnabled,payoutMethods:['PIX','TED'],depositMethods:['PIX','CARD'],internationalPayouts:false,identityVerified:state.identities?.[actor.id]?.status==='verified'&&Boolean(state.identities[actor.id].sealed)&&Date.now()-state.identities[actor.id].submittedAt<30*86400000,notice:PAYMENT_NOTICE,...cashView(state,status.environment||'production',actor.id,actor.admin),...(actor.admin?{providerStatus:status}:{})};}
+export function walletSummary(state,actor,env=process.env){const status=paymentsStatus(env),access=identityAccess(state.identities?.[actor.id]);return {enabled:status.paymentsEnabled,payoutMethods:access.documentType==='passport'?[]:['PIX','TED'],depositMethods:access.documentType==='passport'?[]:['PIX','CARD'],internationalPayouts:false,identityVerified:access.identityVerified,financiallyEligible:access.financiallyEligible,financialAccessReason:access.reason,documentType:access.documentType,...(actor.admin?{internationalSetup:{enabled:false,providerConfigured:false,payoutsConfigured:false,identityDocuments:['cpf','passport'],required:['provider_contract','approved_countries','deposits_and_payouts','live_reconciliation']}}:{}),notice:PAYMENT_NOTICE,...cashView(state,status.environment||'production',actor.id,actor.admin),...(actor.admin?{providerStatus:status}:{})};}
 
 // Scheduled sweep recovers missed webhooks and ambiguous POST responses using GET only.
 export async function reconcileWallet(db,{env=process.env,provider=createAsaasClient({env}),now=Date.now(),limit=8}={}){
