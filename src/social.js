@@ -7,3 +7,5 @@ export const isOnline=(p,now=Date.now())=>p?.status==='active'&&Number.isFinite(
 export const related=(f,a,b)=>[f.from,f.to].includes(a)&&[f.from,f.to].includes(b);
 export const blocked=(s,a,b)=>(s.blocks||[]).some(x=>(x.from===a&&x.to===b)||(x.from===b&&x.to===a));
 export function socialCount(s,user,now=Date.now()){return (s.friendships||[]).filter(f=>f.to===user&&f.status==='pending').length+s.challenges.filter(c=>c.target===user&&c.status==='open'&&(!c.expiresAt||c.expiresAt>now)).length;}
+
+export function readablePlayers(s){const view={players:Object.fromEntries(Object.entries(s.players||{}).map(([id,p])=>[id,{...p}]))};for(const p of Object.values(view.players)){if(!p.bot&&isAutomaticHandle(p)&&p.name!=='Jogador'){const handle=suggestedHandle(view,p.name,p.id);if(handle)p.username=handle;}}return view.players;}
