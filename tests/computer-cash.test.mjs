@@ -50,3 +50,7 @@ test('aborting an unaccepted computer game returns both original BRL holds once'
  let s=cmd(setup(),'alice','sandra_match',match);const id=s.games.at(-1).id;s=applyCommand(s,actor('alice'),{id:'abort',type:'game_abort',payload:{id}},now+91000);
  assert.equal(s.cash.sandbox.accounts.alice.available,10000);assert.equal(s.cash.sandbox.accounts[SANDRA].available,3000);assert.equal(s.cash.sandbox.accounts[SANDRA].reserved,0);assert.throws(()=>cmd(s,'alice','game_abort',{id}));
 });
+test('admin can retrieve only spendable computer funds while keeping an active table reservation intact',()=>{
+ let s=cmd(setup(),'alice','sandra_match',match);s=cmd(s,'admin','sandra_cash_return',{currency:'BRL',amount:1500});assert.equal(s.cash.sandbox.accounts.admin.available,8500);assert.equal(s.cash.sandbox.accounts[SANDRA].available,500);assert.equal(s.cash.sandbox.accounts[SANDRA].reserved,1000);
+ assert.throws(()=>cmd(s,'admin','sandra_cash_return',{currency:'BRL',amount:501}),/Saldo/);assert.throws(()=>cmd(s,'alice','sandra_cash_return',{currency:'BRL',amount:100}),/administração/);assert.equal(computerCashOffer(s,'sandbox').maxStakeCents,500);
+});
