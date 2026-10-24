@@ -488,3 +488,6 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 @media(prefers-reduced-motion:reduce){.paid-challenge .prize,.search-avatar-reel,.search-dots{animation:none!important}}@media(max-width:600px){.board-offer-item{gap:5px}.board-offer-item .button{font-size:9px}.opponent-search-name b{font-size:12px}}
 
 .shop-new-legends{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:24px 0;padding:22px;border:1px solid #695c46;border-radius:15px;background:linear-gradient(110deg,#28252b,#151a22)}.shop-new-legends h2{margin:10px 0 15px;font-size:23px}.legend-peek{display:flex;gap:6px;flex:none}.legend-peek .shop-art-preview{width:66px;height:80px;border-radius:14px}.legend-peek .avatar-art{border-radius:14px}@media(max-width:800px){.shop-new-legends{flex-direction:column;align-items:flex-start}.legend-peek .shop-art-preview{width:52px;height:66px}}
+
+/* Availability indicator keeps its semantic green across themes. */
+.header-right .status-dot{background:#35c76f;box-shadow:0 0 0 3px #35c76f18}
