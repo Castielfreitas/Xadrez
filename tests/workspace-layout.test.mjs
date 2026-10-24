@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {runInNewContext} from 'node:vm';import {parseHTML} from 'linkedom';import {createPaymentsUI} from '../src/payments-ui.js';
+const app=await readFile(new URL('../src/app.js',import.meta.url),'utf8');
+test('admin sections separate settings, verification, analysis, players, results and audit without nesting forms',()=>{
+ const a=app.indexOf('function administration()'),b=app.indexOf('let pendingVisualMove',a);
+ const state={settings:{feeBps:1000},players:{},games:[],reviews:[],audit:[]};
+ const html=runInNewContext(app.slice(a,b)+';administration();',{online:false,actor:{admin:true},adminSection:'settings',localDemoAllowed:false,state,computerOffer:{},config:{},avatar:()=>'',brl:String,badge:String,esc:String,label:{},trust:{adminPanel:()=>'<div>Identidade</div>'},fairPlayPanel:()=>'<div>Fair play</div>'});
+ const {document}=parseHTML(html);assert.equal(document.querySelectorAll('[data-admin-panel]').length,6);assert.equal(document.querySelectorAll('#settings-form fieldset').length,3);assert.equal(document.querySelectorAll('.admin-computer>section').length,3);assert.equal(document.querySelectorAll('form form').length,0);assert(document.querySelector('[data-admin-panel=players] table'));assert(document.querySelector('[data-admin-panel=audit] .audit'));assert(!document.querySelector('[data-admin-panel=settings]').hidden);assert(document.querySelector('[data-admin-panel=players]').hidden);
+});
+test('wallet tabs keep transaction histories and administrative controls separate',()=>{
+ const previous=globalThis.document,interval=globalThis.setInterval;const {window}=parseHTML('<main></main>');globalThis.document=window.document;globalThis.setInterval=()=>0;
+ try{const ui=createPaymentsUI({actor:()=>({id:'admin',admin:true}),config:()=>({configured:false}),request:async()=>({}),modal(){},esc:String,toast(){}});document.querySelector('main').innerHTML=ui.render();assert.equal(document.querySelectorAll('[data-wallet-section]').length,4);assert(document.querySelector('[data-wallet-panel=admin]').hidden);document.querySelector('[data-wallet-section=admin]').dispatchEvent(new window.Event('click',{bubbles:true}));assert(!document.querySelector('[data-wallet-panel=admin]').hidden);assert(document.querySelector('[data-wallet-panel=deposits]').hidden);assert(document.querySelector('[data-wallet-panel=admin] [data-payment=platform]'));}finally{globalThis.document=previous;globalThis.setInterval=interval;}
+});

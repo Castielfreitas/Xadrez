@@ -521,3 +521,30 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 @media(max-width:640px){.ranking-table th,.ranking-table td{padding:8px 10px}.ranking-table td{height:44px}.ranking-table .player-cell{gap:8px}.ranking-table .player-cell>.avatar{width:30px;height:30px;min-width:30px;flex-basis:30px}.tournament-standing>h3{font-size:13px}}
 
 .ranking-history{padding:12px 16px;border:1px solid #ffffff0c;border-radius:12px;background:#1b1c20;box-shadow:none}.ranking-history .promo-line{padding:8px 0;font-size:12px;border-bottom:1px solid #ffffff08}.ranking-history .promo-line:last-child{border-bottom:0}
+
+/* Distinct workspaces keep everyday actions separate from history and administration. */
+.workspace-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 22px;padding:5px;border:1px solid #ffffff0d;background:#1b1c20;border-radius:12px}
+.workspace-tabs button{padding:10px 14px;border:0;border-radius:8px;background:none;color:#aaaeb7;font:inherit;font-size:12px;cursor:pointer}
+.workspace-tabs button[aria-pressed=true]{background:#d5aa5819;color:#e9cd94;box-shadow:inset 0 0 0 1px #d5aa5828}
+[data-admin-panel][hidden],[data-wallet-panel][hidden]{display:none!important}
+.wallet-workspace{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px;align-items:start}
+.wallet-help{display:grid;gap:16px}.wallet-help .panel{margin:0;padding:20px}.wallet-help h3{margin-top:0;font-size:15px}.wallet-help p{font-size:12px;line-height:1.7;color:var(--muted)}
+.wallet-balance-card{padding:24px!important;margin-bottom:22px}.wallet-balance-card>h2:first-child{font-size:13px;color:var(--muted);font-weight:500}.wallet-balance-card>h2.money{font-size:36px;margin:14px 0}.wallet-balance-card .button-row{margin:22px 0 16px;gap:10px}
+#cash-wallet [data-wallet-panel]{padding:18px;border:1px solid #ffffff0c;border-radius:12px;background:#1b1c20}
+#cash-wallet [data-wallet-panel]>.panel{box-shadow:none;border-color:#ffffff0c}
+#cash-wallet [data-wallet-panel]>p{padding:12px 0;margin:0;border-bottom:1px solid #ffffff08;font-size:13px}
+#cash-wallet [data-wallet-panel]>h3{margin:0 0 16px;font-size:16px}
+.admin-grid{display:grid;grid-template-columns:1fr;gap:20px;align-items:start}
+#settings-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:24px}
+#settings-form .settings-title,#settings-form .settings-save{grid-column:1/-1;margin:0;justify-self:start}
+#settings-form fieldset{min-width:0;margin:0;padding:18px;border:1px solid #ffffff10;border-radius:10px;background:#15171b}
+#settings-form legend{padding:0 8px;color:#ddc18b;font-size:13px;font-weight:600}
+#settings-form fieldset p{font-size:11px;line-height:1.7;color:var(--muted)}
+#settings-form .check{display:flex;gap:10px;padding:10px 0;margin:0;border-bottom:1px solid #ffffff07;font-size:12px;line-height:1.6;align-items:flex-start}
+#settings-form .check input{flex:none;margin-top:4px}
+.admin-computer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding:24px}
+.admin-computer>section{min-width:0}.admin-computer>section+section{border-left:1px solid #ffffff0c;padding-left:24px}.admin-computer h2{font-size:16px;margin:0 0 18px}.admin-computer p{font-size:12px;line-height:1.7}.admin-computer .promo-line{gap:8px;flex-wrap:wrap;font-size:11px}
+[data-admin-panel]>.panel{border-color:#ffffff0c;box-shadow:none}
+@media(max-width:1100px){#settings-form{grid-template-columns:1fr 1fr}.admin-computer{grid-template-columns:1fr 1fr}.admin-computer>section:last-child{grid-column:1/-1;border-left:0;padding-left:0;border-top:1px solid #ffffff0c;padding-top:20px}.wallet-workspace{grid-template-columns:minmax(0,1fr) 240px}}
+@media(max-width:760px){.wallet-workspace{grid-template-columns:1fr}.wallet-help{grid-template-columns:1fr 1fr}#settings-form,.admin-computer{grid-template-columns:1fr;padding:16px}.admin-computer>section+section{border-left:0;padding-left:0;border-top:1px solid #ffffff0c;padding-top:20px}.workspace-tabs{gap:3px}.workspace-tabs button{padding:9px 10px}}
+@media(max-width:460px){.wallet-help{grid-template-columns:1fr}.wallet-balance-card .button-row{display:grid}}
