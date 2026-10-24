@@ -3,7 +3,7 @@ const app=await readFile(new URL('../src/app.js',import.meta.url),'utf8');
 const from=app.indexOf('async function quickMatchForm('),to=app.indexOf('const PLAYER_COUNTRIES',from);
 function fixture(enabled=true){let html='';const sandbox={online:true,localDemoAllowed:false,config:{cashGamesEnabled:true},computerOffer:{},state:{settings:{sandraCashChallenges:enabled}},trustRequest:async()=>({enabled,busy:false,maxStakeCents:750}),configure:value=>html=value,timePicker:()=>'',brl:c=>'R$ '+(c/100).toFixed(2),loginForm(){},modal(){}};runInNewContext(app.slice(from,to)+';this.open=quickMatchForm;',sandbox);return {sandbox,get html(){return html;}};}
 test('paid setup includes explicit computer option only when enabled and shows the server entry cap',async()=>{
- for(const enabled of [true,false]){const f=fixture(enabled);await f.sandbox.open('stake');assert.equal(f.html.includes('value="sandra"'),enabled);if(enabled){assert.match(f.html,/Entrada máxima/);assert.match(f.html,/R\$ 7.50/);assert.match(f.html,/computador, em força máxima/);}}
+ for(const enabled of [true,false]){const f=fixture(enabled);await f.sandbox.open('stake');assert.equal(f.html.includes('value="sandra"'),enabled);if(enabled){assert.match(f.html,/Entrada máxima/);assert.match(f.html,/R\$ 7.50/);assert.match(f.html,/Escolho enfrentar Casandra — computador\./);}}
 });
 test('computer choice clamps input to available bankroll and requires explicit consent without human rating',async()=>{
  const f=fixture(true);await f.sandbox.open('stake');const {document}=parseHTML(f.html);const form=document.querySelector('form');form.querySelector('[name=opponent] option[value=sandra]').selected=true;form.querySelector('[name=mode]').value='stake';
