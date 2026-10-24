@@ -574,7 +574,7 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 
 /* Shared surface tokens apply to every card family, including specialist modules. */
 :root{--card-radius:14px;--card-border:rgba(255,255,255,.075);--card-shadow:0 5px 24px -15px rgba(0,0,0,.24);--dialog-shadow:0 16px 64px -26px rgba(0,0,0,.42)}
-:is(.panel,.small-panel,.hero,.floating-tag,.tournament-card,.tournament-promo,.practice-card,.mode-card,.game-row,.stat-strip,.table-wrap,.result-card,.camera-panel,.lesson-choice,.tournament-standing,.tournament-countdown,.tournament-prize-preview,.viability-grid>div,.production-preflight,.identity-summary-count,.identity-row,.identity-auto-panel,.tournament-winner,.shop-hero,.shop-info,.shop-card,.shop-featured-card,.shop-new-legends,.finance-filter,.finance-metric,.board-offer-item,.ranking-history,.workspace-tabs,#settings-form fieldset,#cash-wallet [data-wallet-panel]){
+:where(.panel,.small-panel,.hero,.floating-tag,.tournament-card,.tournament-promo,.practice-card,.mode-card,.game-row,.stat-strip,.table-wrap,.result-card,.camera-panel,.lesson-choice,.tournament-standing,.tournament-countdown,.tournament-prize-preview,.viability-grid>div,.production-preflight,.identity-summary-count,.identity-row,.identity-auto-panel,.tournament-winner,.shop-hero,.shop-info,.shop-card,.shop-featured-card,.shop-new-legends,.finance-filter,.finance-metric,.board-offer-item,.ranking-history,.workspace-tabs,#settings-form fieldset,#cash-wallet [data-wallet-panel]){
  border-radius:var(--card-radius)!important;
  box-shadow:var(--card-shadow)!important;
  border-color:var(--card-border)!important;
