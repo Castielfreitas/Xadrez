@@ -571,3 +571,17 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 @keyframes challenge-value-pulse{0%,100%{color:#75dba5;text-shadow:0 0 0 #75dba500}50%{color:#a1f0c2;text-shadow:0 0 9px #75dba52b}}
 @media(max-width:640px){.challenge-table td,.challenge-table th{padding:7px 9px}.challenge-table td{height:50px}.challenge-table .player-cell{gap:7px}}
 @media(prefers-reduced-motion:reduce){.challenge-table .paid-challenge .challenge-entry,.challenge-table .paid-challenge .prize{animation:none!important}}
+
+/* Shared surface tokens apply to every card family, including specialist modules. */
+:root{--card-radius:14px;--card-border:rgba(255,255,255,.075);--card-shadow:0 5px 24px -15px rgba(0,0,0,.24);--dialog-shadow:0 16px 64px -26px rgba(0,0,0,.42)}
+:is(.panel,.small-panel,.hero,.floating-tag,.tournament-card,.tournament-promo,.practice-card,.mode-card,.game-row,.stat-strip,.table-wrap,.result-card,.camera-panel,.lesson-choice,.tournament-standing,.tournament-countdown,.tournament-prize-preview,.viability-grid>div,.production-preflight,.identity-summary-count,.identity-row,.identity-auto-panel,.tournament-winner,.shop-hero,.shop-info,.shop-card,.shop-featured-card,.shop-new-legends,.finance-filter,.finance-metric,.board-offer-item,.ranking-history,.workspace-tabs,#settings-form fieldset,#cash-wallet [data-wallet-panel]){
+ border-radius:var(--card-radius)!important;
+ box-shadow:var(--card-shadow)!important;
+ border-color:var(--card-border)!important;
+}
+.hero,.shop-hero,.tournament-winner{--card-border:rgba(213,170,88,.18)}
+.mode-card.is-selected,.mode-card[aria-pressed=true]{--card-border:rgba(230,192,121,.6)}
+.shop-card:hover,.shop-featured-card:hover{--card-border:rgba(213,170,88,.3)}
+dialog{border-radius:var(--card-radius);border-color:var(--card-border);box-shadow:var(--dialog-shadow)}
+/* Internal surfaces share the softer outline without accumulating stacked shadows. */
+.panel .panel,.panel .table-wrap,.panel .finance-metric,.admin-computer>section,.tournament-detail-panel .tournament-standing{box-shadow:none!important}
