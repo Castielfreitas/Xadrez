@@ -30,6 +30,7 @@ export default async function handler(req,res){
 
  const token=req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
  if(token){const {data,error}=await client.auth.getUser(token);if(error||!data.user?.email_confirmed_at)throw new DomainError('Entre com uma conta de e-mail confirmado.',401);actor={id:data.user.id,email:data.user.email,admin:(process.env.ADMIN_EMAILS||'').split(',').map(s=>s.trim().toLowerCase()).includes(data.user.email?.toLowerCase())};}
+ if(action==='bot-turn'){if(req.method!=='POST'||!actor)throw new DomainError('Acesso não autorizado.',401);waitUntil(processSandra(client).catch(()=>{}));return res.status(202).json({queued:true});}
  const {data:row,error}=await client.from('arena_state').select('state,revision').eq('id','main').single();if(error)throw new Error('Database unavailable');waitUntil(processScheduledTournaments(client).catch(()=>{}));if(actor){waitUntil(processSandra(client).catch(()=>{}));waitUntil(processPaymentEvents(client).catch(()=>{}));}if(row.state.settings.analysisEnabled)waitUntil(processAnalysis(client).catch(()=>{}));
  if(action==='trust-cleanup'&&req.method==='GET'){await cleanupTrust(client);return res.status(200).json({ok:true});}waitUntil(cleanupTrust(client).catch(()=>{}));
  if(req.method==='GET'&&action==='state')return res.status(200).json({state:publicState(row.state,actor?.id,actor?.admin),revision:row.revision,actor:actor?{id:actor.id,admin:actor.admin}:null});
