@@ -45,6 +45,7 @@ test('admin can price realistic groups and shoppers can order the entire filtere
  let form=document.querySelector('.shop-price-form');
  assert(form.querySelector('[name=collection] option[value="@realistic"]'));
  assert(form.querySelector('[name=collection] option[value="@legends"]'));
+ form.querySelector('[name=kind] option[value=avatar]').selected=true;
  form.querySelector('[name=scope] option[value=collection]').selected=true;
  form.querySelector('[name=collection] option[value="@realistic"]').selected=true;
  form.querySelector('[name=price]').value='12,00';
