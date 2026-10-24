@@ -11,7 +11,7 @@ test('every online move renders a legal optimistic position before awaiting netw
  assert.match(app,/confirmed\.fen===pendingVisualMove\.baseFen/);
 });
 test('live play polls all active game types without waiting for presence writes',()=>{
- assert.match(app,/\(fast\?250:1800\)/);
+ assert.match(app,/boardStreamConnected\?2500:250/);
  assert.match(app,/setInterval\(\(\)=>pollOnlineState\(liveRequested\),250\)/);
  assert.match(app,/client\.channel\('arena-live-v1'\)/);
  assert.match(app,/type:'presence',payload:\{\}\}\)\.catch\(\(\)=>\{\}\)/);

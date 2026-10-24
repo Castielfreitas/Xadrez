@@ -1,3 +1,4 @@
+import {computerCashOffer} from '../src/computer-cash.js';
 import {financialDashboard,dashboardCsv} from './financial-dashboard.js';
 import {shopSummary,buyItem,equipItem,refundItem,shopPricing,setShopPrice} from './shop.js';
 import {timingSafeEqual} from 'node:crypto';
@@ -75,6 +76,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error||!row)throw new DomainError('Carteira indisponível.',503);
    if(row.state.players[actor.id]?.status!=='active')throw new DomainError('Conta indisponível.',403);
    if(request.method==='GET'){
+    if(action==='computer-offer')return json({...computerCashOffer(row.state,status.environment,{enabled:status.paymentsEnabled&&env.ASAAS_GAMES_ENABLED==='true'}),...(actor.admin?{availableCents:row.state.cash?.[status.environment]?.accounts?.['arena-sandra']?.available||0,reservedCents:row.state.cash?.[status.environment]?.accounts?.['arena-sandra']?.reserved||0}:{} )});
     if(action==='production-readiness'){if(!actor.admin)throw new DomainError('Acesso exclusivo da administração.',403);return json(productionReadiness(row.state,config,status,env));}
     if(action==='financial-dashboard'){const query=Object.fromEntries(url.searchParams);const report=financialDashboard(row.state,actor,query,env);return json(query.format==='csv'?{csv:dashboardCsv(report),filename:'arena-financeiro-'+report.scope+'-'+report.period.fromDate+'-'+report.period.toDate+'.csv'}:report);}
     if(action==='shop-summary')return json(shopSummary(row.state,actor,env));
@@ -96,7 +98,7 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
     const payload=identityPayload(body);privateImage(body.document);privateImage(body.selfie);
     const command={id:crypto.randomUUID(),type:'identity_submit',payload:{...payload,documentPath:'pending',selfiePath:'pending'}};applyCommand(row.state,{...actor,server:true},command);
     const paths=[];try{payload.documentPath=await putPrivate(db.storage,actor.id,'document',body.document);paths.push(payload.documentPath);payload.selfiePath=await putPrivate(db.storage,actor.id,'selfie',body.selfie);paths.push(payload.selfiePath);
-     const result=await cashTransaction(db,state=>{const next=applyCommand(state,{...actor,server:true},{...command,payload});Object.assign(state,next);return true;});return json({state:publicState(result.state,actor.id,actor.admin),actor:{id:actor.id,admin:actor.admin}});
+     const result=await cashTransaction(db,state=>{const next=applyCommand(state,{...actor,server:true},{...command,payload});Object.assign(state,next);return true;});return json({state:publicState(result.state,actor.id,actor.admin),revision:result.revision,actor:{id:actor.id,admin:actor.admin}});
     }catch(e){if(paths.length)await db.storage.from('arena-trust-private').remove(paths);throw e;}
    }
    if(JSON.stringify(body).length>6000)throw new DomainError('Solicitação inválida.');
@@ -110,8 +112,8 @@ export function createFinanceHandler({db,load=loadFinanceConfig,providerFactory=
    if(action==='wallet-withdraw-decision')return json({operation:await decideWithdrawal(db,actor,body,{env,provider})});
    if(action==='wallet-platform-transfer')return json(await claimPlatformRevenue(db,actor,body,{env}));
    if(action==='command'){
-    if(['demo_credit','sandra_fund'].includes(body.type))throw new DomainError('Operação indisponível.',403);
-    const result=await cashTransaction(db,state=>{const next=applyCommand(state,financialActor(state,actor,body,env),body);Object.assign(state,next);return true;});return json({state:publicState(result.state,actor.id,actor.admin),actor:{id:actor.id,admin:actor.admin}});
+    if(body.type==='demo_credit'||body.type==='sandra_fund'&&body.payload?.currency!=='BRL')throw new DomainError('Operação indisponível.',403);
+    const result=await cashTransaction(db,state=>{const next=applyCommand(state,financialActor(state,actor,body,env),body);Object.assign(state,next);return true;});return json({state:publicState(result.state,actor.id,actor.admin),revision:result.revision,actor:{id:actor.id,admin:actor.admin}});
    }
    if(action==='finance-register-webhook'){
     if(!actor.admin)throw new DomainError('Acesso exclusivo da administração.',403);

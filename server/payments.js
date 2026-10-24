@@ -9,7 +9,7 @@ export async function cashTransaction(db,mutate){
  for(let attempt=0;attempt<6;attempt++){
   const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();check(!error&&row,'Carteira temporariamente indisponível.',503);
   const next=structuredClone(row.state),result=mutate(next);
-  const {data:ok,error:writeError}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:next});check(!writeError,'Carteira temporariamente indisponível.',503);if(ok)return {state:next,result};
+  const {data:ok,error:writeError}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:next});check(!writeError,'Carteira temporariamente indisponível.',503);if(ok)return {state:next,result,revision:row.revision+1};
  }
  check(false,'Outra movimentação está sendo processada. Tente novamente.',409);
 }

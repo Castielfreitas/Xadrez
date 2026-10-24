@@ -1,0 +1,1 @@
+alter policy arena_receive_own_board on realtime.messages using (extension='broadcast' and topic='arena-board:'||(select auth.uid())::text and (select realtime.topic())='arena-board:'||(select auth.uid())::text);
