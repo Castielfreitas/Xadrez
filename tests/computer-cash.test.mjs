@@ -54,3 +54,7 @@ test('admin can retrieve only spendable computer funds while keeping an active t
  let s=cmd(setup(),'alice','sandra_match',match);s=cmd(s,'admin','sandra_cash_return',{currency:'BRL',amount:1500});assert.equal(s.cash.sandbox.accounts.admin.available,8500);assert.equal(s.cash.sandbox.accounts[SANDRA].available,500);assert.equal(s.cash.sandbox.accounts[SANDRA].reserved,1000);
  assert.throws(()=>cmd(s,'admin','sandra_cash_return',{currency:'BRL',amount:501}),/Saldo/);assert.throws(()=>cmd(s,'alice','sandra_cash_return',{currency:'BRL',amount:100}),/administração/);assert.equal(computerCashOffer(s,'sandbox').maxStakeCents,500);
 });
+test('computer entry cap follows its real spendable balance even above the human quick-search default',()=>{
+ let s=setup();s.cash.sandbox.accounts.alice.available=500000;s.cash.sandbox.accounts[SANDRA].available=400000;assert.equal(computerCashOffer(s,'sandbox').maxStakeCents,400000);
+ s=cmd(s,'alice','sandra_match',{...match,stake:400000});assert.equal(s.cash.sandbox.accounts[SANDRA].reserved,400000);assert.equal(s.cash.sandbox.accounts[SANDRA].available,0);assert.equal(s.cash.sandbox.accounts.alice.reserved,400000);
+});
