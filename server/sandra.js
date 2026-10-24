@@ -77,13 +77,16 @@ async function work(db){
  for(let n=0;n<4;n++){
   const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error)return;
   const g=row.state.games.filter(g=>g.bot===SANDRA&&(!g.botRetryAt||g.botRetryAt<Date.now())&&(!g.botLeaseUntil||g.botLeaseUntil<Date.now())&&(g.status==='pending'&&!g.accepted.includes(SANDRA)||g.status==='playing'&&(new Chess(g.fen).turn()==='w'?g.white:g.black)===SANDRA)).sort((a,b)=>(a.lastMoveAt||a.createdAt||0)-(b.lastMoveAt||b.createdAt||0))[0];if(!g)return;
-  if(g.status==='pending'&&!g.accepted.includes(SANDRA)){const next=applyCommand(row.state,{id:SANDRA,server:true},{id:`sandra-accept-${g.id}-${g.rematches}`,type:'game_accept',payload:{id:g.id}});const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:next});if(ok)return;continue;}
+  if(g.status==='pending'&&!g.accepted.includes(SANDRA)){const next=applyCommand(row.state,{id:SANDRA,server:true},{id:`sandra-accept-${g.id}-${g.rematches}`,type:'game_accept',payload:{id:g.id}});const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:next});continue;}
   if(g.status!=='playing'||(new Chess(g.fen).turn()==='w'?g.white:g.black)!==SANDRA)return;
+  // Warm the engine while the database acquires the lease; no move is applied
+  // until ownership and the original position have been verified.
+  const calculation=sandraMove(g.fen);calculation.catch(()=>{});
   const ticket=crypto.randomUUID();g.botLeaseUntil=Date.now()+15000;g.botTicket=ticket;
-  const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:row.state});if(ok){job={id:g.id,fen:g.fen,ply:g.moves.length,round:g.rematches,ticket};break;}
+  const {data:ok}=await db.rpc('arena_compare_and_swap',{expected_revision:row.revision,next_state:row.state});if(ok){job={id:g.id,fen:g.fen,ply:g.moves.length,round:g.rematches,ticket,calculation};break;}
  }
  if(!job)return;
- let move;try{move=await sandraMove(job.fen);}catch{
+ let move;try{move=await job.calculation;}catch{
   // A startup error must not leave the player waiting for the 15-second lease.
   for(let n=0;n<3;n++){
    const {data:row,error}=await db.from('arena_state').select('state,revision').eq('id','main').single();if(error||!row)break;
