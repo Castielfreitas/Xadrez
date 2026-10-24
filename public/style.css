@@ -593,3 +593,7 @@ dialog{border-radius:var(--card-radius);border-color:var(--card-border);box-shad
 .board .square.last-move.light{background:#e7d38d!important}
 .board .square.last-move.dark{background:#b7aa60!important}
 .board .square.last-move::after{content:"";position:absolute;inset:0;border:2px solid rgba(255,224,121,.5);pointer-events:none}
+
+/* Keep the previous move visible on every board theme, including empty origin. */
+.board[data-theme] .square.last-move-from{background:#d6c879!important;box-shadow:inset 0 0 0 2px #f5df8a88}
+.board[data-theme] .square.last-move-to{background:#e7d38d!important;box-shadow:inset 0 0 0 2px #f5df8aaa}
