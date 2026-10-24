@@ -275,7 +275,7 @@ header,.breadcrumb,.header-right{font-size:14px}
 .button svg.arena-menu-icon{width:18px;height:18px}
 /* Short visible piece travel; capture fragments have their own animation. */
 .board .piece,.board .piece-real,.square .piece,.square .piece-real{
-  transition-duration:180ms!important;animation-duration:180ms!important;
+  transition-duration:0ms!important;animation-duration:0ms!important;
 }
 /* Capture debris continues to be visible; only the moving chess pieces snap. */
 .capture-shard{animation-duration:380ms!important}
@@ -491,3 +491,6 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 
 /* Availability indicator keeps its semantic green across themes. */
 .header-right .status-dot{background:#35c76f;box-shadow:0 0 0 3px #35c76f18}
+
+.shop-filter{grid-template-columns:repeat(3,minmax(110px,1fr)) minmax(150px,1.5fr) auto}
+@media(max-width:1000px){.shop-filter{grid-template-columns:1fr 1fr}.shop-filter button{justify-self:start}}

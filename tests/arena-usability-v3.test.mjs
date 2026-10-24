@@ -17,7 +17,7 @@ test('mode selection visibly persists and exposes accessible active state in lob
  assert.match(css,/\.setup-tabs button\.is-selected/);
 });
 test('board movement and its sound finish promptly',()=>{
- assert.match(app,/duration:180,easing:.*?fill:'both'/);
+ assert.match(app,/duration:0,easing:.*?fill:'both'/);
  assert.match(app,/pendingVisualMove=\{id:game.id,baseFen:game.fen,ply,game:predicted\}/);
  assert.match(sound,/const duration=\.18/);
  assert.match(css,/transition-duration:0ms!important/);
