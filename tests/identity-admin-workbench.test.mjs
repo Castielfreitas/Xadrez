@@ -60,7 +60,7 @@ test('admin workbench includes three tabs, selection, approve-all action, and se
 });
 test('bulk selections never approve without viewing evidence in the current session',()=>{
  assert.match(ui,/inspectedIdentityUsers\.add\(user\);modal/);
- assert.match(ui,/Abra e confira CPF, documento e selfie/);
+ assert.match(ui,/Abra e confira documento e selfie/);
  assert.match(ui,/Aprovar/);
  assert.match(ui,/identity_review/);
  assert.doesNotMatch(ui,/identity_bulk_approve_unchecked/);

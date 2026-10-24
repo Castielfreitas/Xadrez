@@ -1,3 +1,4 @@
+import {identityRows} from './i18n-identity.js';
 import {financeRows} from './i18n-finance.js';
 import {shopRows} from './i18n-shop.js';
 import {lessonRows,paymentRows} from './i18n-lessons.js';
@@ -272,7 +273,7 @@ Essa peça não pode fazer esse lance. Tente outra casa.|That piece cannot make 
 Lance legal! Procure o lance que resolve o objetivo desta lição.|Legal move! Find the move that solves this lesson.|¡Jugada legal! Busca la que resuelve esta lección.|Coup légal ! Cherchez celui qui résout cette leçon.|Legal! Finde den Zug, der die Aufgabe löst.|Mossa legale! Cerca quella che risolve la lezione.
 Bom lance! O adversário respondeu. Encontre a próxima jogada da sequência.|Good move! Find the next move after the opponent's reply.|¡Buena jugada! Encuentra la siguiente tras la respuesta rival.|Bon coup ! Trouvez la suite après la réponse adverse.|Guter Zug! Finde nach der Antwort den nächsten Zug.|Buona mossa! Trova la continuazione dopo la risposta.
 `;
-const dict=new Map((rows+lessonRows+paymentRows+shopRows+financeRows).trim().split('\n').map(line=>{const [pt,...translations]=line.split('|');return [pt.toLocaleLowerCase('pt-BR'),Object.fromEntries(['en','es','fr','de','it'].map((lang,i)=>[lang,translations[i]]))];}));
+const dict=new Map((rows+lessonRows+paymentRows+shopRows+financeRows+identityRows).trim().split('\n').map(line=>{const [pt,...translations]=line.split('|');return [pt.toLocaleLowerCase('pt-BR'),Object.fromEntries(['en','es','fr','de','it'].map((lang,i)=>[lang,translations[i]]))];}));
 export const hasTranslation=(value,language)=>language==='pt'||Boolean(dict.get(String(value).trim().toLocaleLowerCase('pt-BR'))?.[language]);
 export function translateText(value,language='pt'){
  if(language==='pt'||!LANGUAGES[language]||typeof value!=='string')return value;
