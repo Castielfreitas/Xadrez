@@ -1,4 +1,4 @@
-import {shopItem,ownedCosmetics,COUNTS,COLLECTIONS} from '../src/shop-catalog.js';
+import {shopItem,ownedCosmetics,COUNTS,COLLECTIONS,PRICING_GROUPS} from '../src/shop-catalog.js';
 import {cashTransaction,paymentsStatus,financialIdentity} from './payments.js';
 import {check,cashBook,cashAccount,operationId} from './cash-ledger.js';
 function enabled(env){const status=paymentsStatus(env);check(status.paymentsEnabled,'A loja está temporariamente indisponível para compras.',503);return status.environment;}
@@ -12,7 +12,7 @@ export function shopPricing(state,env=process.env){const p=state.cash?.[payments
 export async function setShopPrice(db,actor,input,{env=process.env,now=Date.now()}={}){
  check(actor.admin,'Acesso exclusivo da administração.',403);const environment=paymentsStatus(env).environment;check(['sandbox','production'].includes(environment),'Loja indisponível.',503);
  const target=input.target;check(typeof target==='string'&&target.length<=80,'Regra de preço inválida.');const parts=target.split(':');
- check((parts[0]==='category'&&parts.length===2&&Object.hasOwn(COUNTS,parts[1]))||(parts[0]==='collection'&&parts.length===3&&Object.hasOwn(COUNTS,parts[1])&&COLLECTIONS.some(c=>c.id===parts[2]))||(parts[0]==='item'&&parts.length===2&&shopItem(parts[1])),'Regra de preço inválida.');
+ check((parts[0]==='category'&&parts.length===2&&Object.hasOwn(COUNTS,parts[1]))||(parts[0]==='collection'&&parts.length===3&&Object.hasOwn(COUNTS,parts[1])&&COLLECTIONS.some(c=>c.id===parts[2]))||(parts[0]==='group'&&parts.length===3&&parts[1]==='avatar'&&PRICING_GROUPS.some(g=>g.id===parts[2]))||(parts[0]==='item'&&parts.length===2&&shopItem(parts[1])),'Regra de preço inválida.');
  check(input.priceCents===null||Number.isSafeInteger(input.priceCents)&&input.priceCents>=100&&input.priceCents<=1000000,'Informe entre R$ 1,00 e R$ 10.000,00.');check(Number.isSafeInteger(input.revision)&&input.revision>=0,'Atualize os preços antes de salvar.');
  return (await cashTransaction(db,state=>{const b=book(state,environment),p=b.shop.pricing??={revision:0,rules:{}};check(p.revision===input.revision,'Os preços foram alterados por outra sessão. Atualize a loja e tente novamente.',409);const before=p.rules[target]??null;if(input.priceCents===null)delete p.rules[target];else p.rules[target]=input.priceCents;p.revision++;p.updatedAt=now;p.updatedBy=actor.id;state.audit.push({id:crypto.randomUUID(),actor:actor.id,action:'shop_price_update',detail:{target,before,after:input.priceCents,environment},at:now});return {pricing:shopPricing(state,env)};})).result;
 }

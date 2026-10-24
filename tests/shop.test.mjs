@@ -27,3 +27,30 @@ test('fifty new portraits have stable unique SKUs, retain admin price overrides 
 test('new realistic portrait can be purchased, equipped and refunded through the same authoritative wallet flow',async()=>{const db=database(),sku='avatar-9472';await buyItem(db,actor,input(sku),{env});await equipItem(db,actor,{kind:'avatar',sku},{env});assert.equal(publicState(db.state,'v').players.u.cosmetics.avatar,sku);assert.equal(db.state.cash.sandbox.accounts.u.available,9510);assert.equal(db.state.cash.sandbox.platform.available,490);await refundItem(db,admin,{id,reason:'Teste autorizado de compra e estorno.'},{env});assert.equal(db.state.cash.sandbox.accounts.u.available,10000);assert.equal(ownedCosmetics(db.state,'u'),null);});
 
 test('frame and effect catalogues show all four finishes before repeating palette variants',()=>{for(const kind of ['frame','effect'])assert.equal(new Set(catalogPage({kind}).items.slice(0,4).map(i=>i.style)).size,4);});
+
+test('realistic group pricing includes all 1330 portraits, supports a separate fifty-portrait price, and charges the authoritative price',async()=>{
+ const {setShopPrice,shopPricing}=await import('../server/shop.js');const db=database();
+ await setShopPrice(db,admin,{target:'group:avatar:realistic',priceCents:1200,revision:0},{env});
+ let pricing=shopPricing(db.state,env);
+ for(let n=8192;n<9522;n++)assert.equal(shopItem('avatar-'+n,pricing).priceCents,1200);
+ assert.equal(shopItem('avatar-0000',pricing).priceCents,490);
+ await setShopPrice(db,admin,{target:'group:avatar:legends',priceCents:1500,revision:1},{env});
+ await setShopPrice(db,admin,{target:'item:avatar-9472',priceCents:1700,revision:2},{env});
+ pricing=shopPricing(db.state,env);assert.equal(shopItem('avatar-9473',pricing).priceCents,1500);assert.equal(shopItem('avatar-9472',pricing).priceCents,1700);assert.equal(shopItem('avatar-8200',pricing).priceCents,1200);
+ await assert.rejects(()=>buyItem(db,actor,input('avatar-9472'),{env}),/preço/);
+ assert.equal(db.state.cash.sandbox.accounts.u.available,10000);
+ const purchased=await buyItem(db,actor,{...input('avatar-9472'),expectedPriceCents:1700},{env});
+ assert.equal(purchased.order.priceCents,1700);assert.equal(db.state.cash.sandbox.accounts.u.available,8300);assert.equal(db.state.cash.sandbox.platform.available,1700);
+ for(const target of ['group:frame:realistic','group:avatar:missing','group:avatar:__proto__'])await assert.rejects(()=>setShopPrice(db,admin,{target,priceCents:200,revision:3},{env}));
+ await setShopPrice(db,admin,{target:'group:avatar:legends',priceCents:null,revision:3},{env});
+ assert.equal(shopItem('avatar-9473',shopPricing(db.state,env)).priceCents,1200);
+});
+test('price sorting happens before pagination, uses current overrides, and retains filters without omissions',()=>{
+ const pricing={rules:{'item:avatar-9521':100,'item:avatar-9472':9999,'group:avatar:realistic':800}};
+ const asc=catalogPage({finish:'realistic',sort:'price-asc',pricing});assert.equal(asc.items[0].id,'avatar-9521');
+ const desc=catalogPage({finish:'realistic',sort:'price-desc',pricing});assert.equal(desc.items[0].id,'avatar-9472');
+ const all=[];for(let page=0;page<asc.pages;page++)all.push(...catalogPage({finish:'realistic',sort:'price-asc',pricing,page}).items);
+ assert.equal(all.length,1330);assert.equal(new Set(all.map(i=>i.id)).size,1330);
+ for(let i=1;i<all.length;i++)assert(all[i].priceCents>=all[i-1].priceCents);
+ assert(catalogPage({finish:'legends',collection:'royal',sort:'price-desc',pricing}).items.every(i=>i.portrait&&i.collection==='royal'));
+});

@@ -31,3 +31,31 @@ test('admin price editor saves an item rule and public catalogue uses the server
 test('refunding an equipped avatar refreshes the profile with revoked cosmetics',async()=>{const previous=globalThis.document,{window}=parseHTML('<html><body><main></main><dialog id="modal"></dialog></body></html>');globalThis.document=window.document;document.querySelector('#modal').close=()=>{};const id='11111111-1111-4111-8111-111111111111',order={id,user:'u',sku:'avatar-0000',name:'Raposa Realeza',priceCents:490,status:'paid'},summary={owned:['avatar-0000'],orders:[order],sales:[order],equipped:{avatar:'avatar-0000',premium:true}},updates=[];try{const ui=createShopUI({actor:()=>({id:'u',admin:true}),state:()=>({players:{u:{name:'Pessoa'}}}),config:()=>({financeEndpoint:'fixture'}),request:async(action,body)=>{if(action==='shop-summary')return structuredClone(summary);if(action==='wallet-summary')return {account:{available:order.status==='paid'?10:500}};if(action==='shop-refund'){assert.equal(body.id,id);order.status='refunded';summary.owned=[];summary.equipped=null;return {refunded:true};}throw Error(action);},modal:html=>document.querySelector('#modal').innerHTML=html,esc:String,toast:()=>{},onLogin:()=>{},onEquipped:value=>updates.push(value)});const settle=()=>new Promise(r=>setImmediate(r)),click=async selector=>{document.querySelector(selector).dispatchEvent(new window.Event('click',{bubbles:true}));await settle();};document.querySelector('main').innerHTML=ui.render();await settle();await click('[data-shop-refund]');document.querySelector('#shop-refund-reason').value='Estorno do teste autorizado.';await click('[data-shop-refund-confirm]');assert.deepEqual(updates,[null]);assert.match(document.querySelector('main').textContent,/Meus itens \(0\)/);assert.match(document.querySelector('main').textContent,/Estornada/);}finally{globalThis.document=previous;}});
 
 test('store submits accent insensitive search, combines collection and keeps featured legends visible',async()=>{const previous=globalThis.document,{window}=parseHTML('<html><body><main></main></body></html>');globalThis.document=window.document;try{const ui=createShopUI({actor:()=>null,state:()=>({players:{}}),config:()=>({}),request:async()=>({}),modal:()=>{},esc:String,toast:()=>{},onLogin:()=>{},onEquipped:()=>{}});document.querySelector('main').innerHTML=ui.render();const form=document.querySelector('#shop-filter');form.querySelector('[name=query]').value='dragao ancestral';form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));assert.equal(document.querySelectorAll('.shop-card').length,24);assert([...document.querySelectorAll('.shop-card h3')].every(e=>e.textContent.includes('Dragão Ancestral')));assert.equal(document.querySelectorAll('.shop-featured-card').length,4);const next=document.querySelector('#shop-filter');next.querySelector('[name=collection] option[value=royal]').selected=true;next.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));assert.equal(document.querySelectorAll('.shop-card').length,8);assert([...document.querySelectorAll('.shop-card h3')].every(e=>e.textContent.includes('Realeza')));}finally{globalThis.document=previous;}});
+
+test('admin can price realistic groups and shoppers can order the entire filtered collection by effective price',async()=>{
+ const previous=globalThis.document,{window}=parseHTML('<html><body><main></main><dialog id="modal"></dialog></body></html>');globalThis.document=window.document;
+ let pricing={revision:0,rules:{'item:avatar-9521':100}},calls=[];
+ try{
+ const ui=createShopUI({actor:()=>({id:'admin',admin:true}),state:()=>({players:{}}),config:()=>({financeEndpoint:'fixture'}),request:async(action,body)=>{
+ if(action==='shop-summary')return {owned:[],orders:[],sales:[],pricing};
+ if(action==='wallet-summary')return {account:{available:0}};
+ if(action==='shop-price'){calls.push(body);pricing={revision:1,rules:{...pricing.rules,[body.target]:body.priceCents}};return {pricing};}throw Error(action);
+ },modal:()=>{},esc:String,toast:()=>{},onLogin:()=>{},onEquipped:()=>{}});
+ document.querySelector('main').innerHTML=ui.render();await settle();
+ let form=document.querySelector('.shop-price-form');
+ assert(form.querySelector('[name=collection] option[value="@realistic"]'));
+ assert(form.querySelector('[name=collection] option[value="@legends"]'));
+ form.querySelector('[name=kind] option[value=avatar]').selected=true;
+ form.querySelector('[name=scope] option[value=collection]').selected=true;
+ form.querySelector('[name=collection] option[value="@realistic"]').selected=true;
+ form.querySelector('[name=price]').value='12,00';
+ form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await settle();
+ assert.deepEqual(calls,[{target:'group:avatar:realistic',priceCents:1200,revision:0}]);
+ form=document.querySelector('#shop-filter');
+ form.querySelector('[name=finish] option[value=realistic]').selected=true;
+ form.querySelector('[name=sort] option[value=price-asc]').selected=true;
+ form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+ assert.equal(document.querySelector('.shop-card [data-shop-view]').dataset.shopView,'avatar-9521');
+ assert.equal(document.querySelectorAll('.shop-featured-card').length,4);
+ }finally{globalThis.document=previous;}
+});

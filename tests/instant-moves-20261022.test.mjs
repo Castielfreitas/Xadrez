@@ -11,8 +11,9 @@ test('every online move renders a legal optimistic position before awaiting netw
  assert.match(app,/confirmed\.fen===pendingVisualMove\.baseFen/);
 });
 test('live play polls all active game types without waiting for presence writes',()=>{
- assert.match(app,/\(fast\?350:1800\)/);
- assert.match(app,/\},250\);\s*async function enterOnline/);
+ assert.match(app,/\(fast\?250:1800\)/);
+ assert.match(app,/setInterval\(\(\)=>pollOnlineState\(liveRequested\),250\)/);
+ assert.match(app,/client\.channel\('arena-live-v1'\)/);
  assert.match(app,/type:'presence',payload:\{\}\}\)\.catch\(\(\)=>\{\}\)/);
 });
 test('selection feedback updates only square classes instead of rebuilding the entire chess interface',()=>{
@@ -20,8 +21,8 @@ test('selection feedback updates only square classes instead of rebuilding the e
  assert.match(app,/cell\.classList\.toggle\('move-target',legal\.includes/);
  assert.match(app,/selected=null;refreshSquareSelection\(\);return/);
 });
-test('menu symbols use slim outlines, and board travel is short and visible',()=>{
+test('menu symbols use slim outlines, and piece movement has no artificial tween',()=>{
  assert.match(app,/stroke-width="1.65"/);
  assert.match(css,/\.nav svg\.arena-menu-icon/);
- assert.match(css,/transition-duration:180ms!important;animation-duration:180ms!important/);
+ assert.match(css,/transition-duration:0ms!important;animation-duration:0ms!important/);
 });
