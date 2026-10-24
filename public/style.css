@@ -548,3 +548,26 @@ html[lang="it-IT"] .mode-card.is-selected::after{content:"✓ Selezionato"}
 @media(max-width:1100px){#settings-form{grid-template-columns:1fr 1fr}.admin-computer{grid-template-columns:1fr 1fr}.admin-computer>section:last-child{grid-column:1/-1;border-left:0;padding-left:0;border-top:1px solid #ffffff0c;padding-top:20px}.wallet-workspace{grid-template-columns:minmax(0,1fr) 240px}}
 @media(max-width:760px){.wallet-workspace{grid-template-columns:1fr}.wallet-help{grid-template-columns:1fr 1fr}#settings-form,.admin-computer{grid-template-columns:1fr;padding:16px}.admin-computer>section+section{border-left:0;padding-left:0;border-top:1px solid #ffffff0c;padding-top:20px}.workspace-tabs{gap:3px}.workspace-tabs button{padding:9px 10px}}
 @media(max-width:460px){.wallet-help{grid-template-columns:1fr}.wallet-balance-card .button-row{display:grid}}
+
+/* Diffuse elevation: no hard lower edge or oversized rectangular shadow. */
+.panel,.tournament-card,.result-card,.shop-card,.shop-featured-card,.shop-new-legends,.tournament-promo,.practice-card,.small-panel,.stat-strip,.game-row,.mode-card,.shop-hero{box-shadow:0 6px 24px -14px rgb(0 0 0 / .25);border-radius:14px}
+.hero{box-shadow:0 10px 38px -22px rgb(0 0 0 / .35),inset 0 1px 0 #ffffff06}
+.mode-card.is-selected,.mode-card[aria-pressed=true]{box-shadow:0 0 0 1px #dfbb7130,0 7px 26px -16px #0005,inset 0 1px 0 #fff2;border-color:#d6b675}
+.mode-card.is-selected::after{box-shadow:0 3px 12px -5px #0005}
+.challenge-table{border:1px solid #ffffff0b;border-radius:14px;background:#1a1c20;box-shadow:none;overflow:auto}
+.challenge-table table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.challenge-table th{padding:11px 13px;font-size:9px;letter-spacing:.8px;color:#969ba4;border-bottom:1px solid #ffffff0b;background:#ffffff02}
+.challenge-table td{height:54px;padding:7px 13px;font-size:12px;border:0;border-bottom:1px solid #ffffff07;vertical-align:middle}
+.challenge-table tbody tr:last-child td{border-bottom:0}
+.challenge-table .player-cell{gap:10px}.challenge-table .player-cell .avatar{width:30px;height:30px;flex:0 0 30px;border-radius:9px}
+.challenge-table .player-link{padding:0;font-size:12px;font-weight:600;line-height:1.25}.challenge-table .player-cell small{font-size:9px;margin-top:3px}.challenge-table .player-rating{font-size:10px}
+.challenge-table .time-pill{padding:4px 7px;font-size:10px;background:#ffffff04;border:1px solid #ffffff08;border-radius:6px;gap:5px}.challenge-table .time-pill svg{width:13px;height:13px}
+.challenge-table .button{padding:7px 10px;font-size:10px;min-height:0;border-radius:7px}.challenge-table .button svg{width:13px;height:13px}
+.challenge-table .paid-challenge{background:linear-gradient(90deg,#4dcb8610,transparent 70%);box-shadow:inset 2px 0 #4dcb8659}
+.challenge-table tbody tr:hover{background-color:#ffffff03}
+.challenge-table .paid-challenge .challenge-entry,.challenge-table .paid-challenge .prize{color:#75dba5;font-weight:600;animation:challenge-value-pulse 2.8s ease-in-out infinite}
+.challenge-table .paid-challenge .prize small{color:#8d9e96;font-weight:400;font-size:9px;margin-top:3px;text-shadow:none}
+.challenge-table .paid-challenge .button{border-color:#63bd8a45;color:#b8ddc7}
+@keyframes challenge-value-pulse{0%,100%{color:#75dba5;text-shadow:0 0 0 #75dba500}50%{color:#a1f0c2;text-shadow:0 0 9px #75dba52b}}
+@media(max-width:640px){.challenge-table td,.challenge-table th{padding:7px 9px}.challenge-table td{height:50px}.challenge-table .player-cell{gap:7px}}
+@media(prefers-reduced-motion:reduce){.challenge-table .paid-challenge .challenge-entry,.challenge-table .paid-challenge .prize{animation:none!important}}
