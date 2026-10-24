@@ -25,8 +25,8 @@ test('rating appears for both sides, including Casandra and estimated non-offici
  assert.match(app,/Computador <span class="player-rating/);
  assert.match(app,/estimado\)\<\/span>/);
 });
-test('only local computer gets a deliberate ~230ms reaction, unlike instant online movement',()=>{
- assert.match(app,/Math\.max\(0,230-\(Date\.now\(\)-startedAt\)\)/);
+test('local computer has no artificial reaction floor and online movement remains optimistic',()=>{
+ assert.doesNotMatch(app,/230-\(Date\.now\(\)-startedAt\)/);
  assert.match(app,/pendingVisualMove=\{id:game\.id,baseFen:game\.fen,ply,game:predicted\}/);
 });
 test('capture has soft granular collapse without simulated gunshot/kick notes',()=>{
